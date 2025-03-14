@@ -1,0 +1,47 @@
+
+	PLATUS 3
+	
+	
+	stappenplan conversie van Platus 2 naar Platus 3:
+	
+	 - [ ] controle data door op elk veld te sorteren
+		 - [ ] derde_naam + derde_type + derde_groep
+			 - [ ] verder bij de N
+		 - [ ] medium_naam
+		 - [ ] datum_tijd
+		 - [ ] locatie
+	 - [v] categorisering + subcategorieen -> categorieen.json
+	 - [ ] Bedrijven maken
+		 - [ ] een "onbekend" dummy bedrijf
+		 - [ ] op basis van bedrijf_namen + bedrijf_uitsluiten -> bedrijven.json
+		 - [ ] nog missende bedrijven aanmaken op basis van 
+	 - [ ] Personen maken op basis van persoon_bankrekeningen -> personen.json
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+			 - [ ] nieuwe, betere structuur
+			 - [i] inlezen vanaf Excel standaard
+			 - [i] opslaan naar parquet en excel
+			 - [i] bewerken in Excel mogelijk, daarna weer inlezen
+			 - [v] id vervangen door een UUID
+				 - [ ] gelijke UUID gebruiken indien interne overboekingen (double-entry bookkeeping)
+			 - [ ] eindsaldo/beginsaldo velden gebruiken van excel
+			 - [ ] bij toevoegen transactie controle doen op bedrag, beginsaldo, eindsaldo en datum voor duplicaten
+			 - [ ] dagindex veranderen naar integer -> bij splitten dus herberekenen
+		 - [v] verwerker schrijven voor Platus 2 -> Platus 3
+		 - [v] package maken met /src/ en installeren in globale
+		 - [ ] transacties als json opslaan als {uuid: transactie_dict, uuid2: transactie_dict}
+		 - [ ] class persoon/bedrijf toevoegen met derde_naam, derde_groep, onderliggende transacties als een lijst van uuids
+			 - [!] alle transacties doorlopen en personen/bedrijven genereren -> opslaan naar json
+				 - [ ] eerst 
+		 - [ ] nieuwe transacties toevoegen
+			 - [ ] nieuwe transactie inlezen van excel
+			 - [ ] transactie verwerken/aanvullen
+		 - [ ] weergevingsmodule
