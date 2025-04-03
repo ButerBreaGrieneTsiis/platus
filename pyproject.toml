@@ -1,7 +1,11 @@
 [project]
 name = "platus"
 version = "0.1.0"
+authors = [
+	{name = "Tom Scheeper", email = "tomscheeper@gmail.com"},
+	]
 
 dependencies = [
-    "pandas",
+    "pandas>=2.2.3",
+	"openpyxl>=3.1.5"
 ]

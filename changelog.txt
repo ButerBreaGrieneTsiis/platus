@@ -4,44 +4,72 @@
 	
 	stappenplan conversie van Platus 2 naar Platus 3:
 	
-	 - [ ] controle data door op elk veld te sorteren
-		 - [ ] derde_naam + derde_type + derde_groep
-			 - [ ] verder bij de N
-		 - [ ] medium_naam
-		 - [ ] datum_tijd
-		 - [ ] locatie
-	 - [v] categorisering + subcategorieen -> categorieen.json
-	 - [ ] Bedrijven maken
-		 - [ ] een "onbekend" dummy bedrijf
-		 - [ ] op basis van bedrijf_namen + bedrijf_uitsluiten -> bedrijven.json
-		 - [ ] nog missende bedrijven aanmaken op basis van 
-	 - [ ] Personen maken op basis van persoon_bankrekeningen -> personen.json
+	 - [v] controle data door op elk veld te sorteren
+		 - [v] derde_naam + derde_type + derde_groep
+		 - [v] medium_naam
+		 - [v] datum_tijd
+		 - [v] locatie
+		 - [v] langslopen onbekend en algemeen/overig
+	 - [v] categorisering + subcategorieen -> categorie.json
+		 - [v] categorieën en subcategorieën maken als objecten
+			 - [v] scheiden cat -> cat.json en subcat -> subcat.json: zo kan (sub)cat_uuid als sleutel gebruikt worden
+		 - [v] alle transacties bijlangs gaan en cat/subcat vervangen door uuid subcat
+		 - [v] alle transacties bijlangs gaan en uuid transactie toevoegen aan categorie.json
+	 - [v] Bedrijven maken
+		 - [v] een "onbekend" dummy bedrijf
+		 - [v] op basis van bedrijf_namen + bedrijf_uitsluiten -> bedrijven.json
+			 - [v] controleer de namen nog eventjes, bijv. NS -> Nederlandse Spoorwegen, DUO, TU Delft, CJIB, PostNL etc.
+		 - [v] nog missende bedrijven aanmaken op basis van alle transacties
+			 - [v] toevoegen ibans en rekeningnummers
+		 - [v] uitsluiten en synoniemen weer toevoegen
+	 - [v] Personen maken op basis van persoon_bankrekeningen -> personen.json
+		 - [v] een "onbekend" dummy persoon
+		 - [v] op basis van persoon_bankrekeningen -> personen.json
+		 - [v] missende personen aanmaken
+		 - [v] personen bijlangs lopen -> bedrijven eruit filteren en verplaatsen
+	 - [v] besluiten of subcategorie onder Bedrijf komt te staan, of Bedrijf juist onder Subcategorie...
+		 - [i] simpele beslissing: bedrijf onder subcategorie, want niet elk bedrijf heeft een subcategorie
 	
+	 - [v] is transactie uuid toevoegen aan subcat/bedrijf/persoon wel nodig? Kan dit niet beter gewoon intern berekend worden; scheelt opslagruimte!
+	 
+	 - [v] methodes schrijven die bij open_json de bedoel omzet naar classes:
+		 - [v] bankrekening
+		 - [v] transacties
+		 - [v] subcategorie
+		 - [v] persoon 	-> doelbewust bij het openen zeggen, dit moet allemaal Persoon zijn
+		 - [v] bedrijf
+	 
+	 - [v] inkomens
+		 - [v] dictionary onder details: transactie.details["inkomen"]:
+			 - [v] {subcat_uuid1: bedrag1, subcat_uuid2: bedrag2} bijv. bedrag1 is bruto, bedrag2 is loonheffingskorting
+		 - [v] standaard subcat = netto salaris
+		 - [v] dit scheelt gekut met telkens moeten splitten
+		 - [v] aanpak:
+			 - [v] langs de huidige inkomens gaan
+			 - [v] alle niet netto-salaris verwijderen en onder details brengen
+			 - [v] dagindex controleren
+			 - [v] index herberekenen
 	
-	
-	
-	
-	
-	
-	
-	
-	
-			 - [ ] nieuwe, betere structuur
-			 - [i] inlezen vanaf Excel standaard
-			 - [i] opslaan naar parquet en excel
-			 - [i] bewerken in Excel mogelijk, daarna weer inlezen
-			 - [v] id vervangen door een UUID
-				 - [ ] gelijke UUID gebruiken indien interne overboekingen (double-entry bookkeeping)
-			 - [ ] eindsaldo/beginsaldo velden gebruiken van excel
-			 - [ ] bij toevoegen transactie controle doen op bedrag, beginsaldo, eindsaldo en datum voor duplicaten
-			 - [ ] dagindex veranderen naar integer -> bij splitten dus herberekenen
-		 - [v] verwerker schrijven voor Platus 2 -> Platus 3
-		 - [v] package maken met /src/ en installeren in globale
-		 - [ ] transacties als json opslaan als {uuid: transactie_dict, uuid2: transactie_dict}
-		 - [ ] class persoon/bedrijf toevoegen met derde_naam, derde_groep, onderliggende transacties als een lijst van uuids
-			 - [!] alle transacties doorlopen en personen/bedrijven genereren -> opslaan naar json
-				 - [ ] eerst 
-		 - [ ] nieuwe transacties toevoegen
-			 - [ ] nieuwe transactie inlezen van excel
-			 - [ ] transactie verwerken/aanvullen
-		 - [ ] weergevingsmodule
+	 - [ ] toevoegen bedrijf/persoon aan json is automatisch een ja
+		 - [ ] echter wordt nog wel gevraagd om een naamswijziging op te slaan
+	 - [ ] gelijke UUID gebruiken indien interne overboekingen (double-entry bookkeeping)
+	 - [ ] bij toevoegen transactie controle doen op bedrag, beginsaldo, eindsaldo en datum voor duplicaten
+	 - [v] dagindex veranderen naar integer -> bij splitten dus herberekenen
+	 - [v] transacties als json opslaan als {uuid: transactie_dict, uuid2: transactie_dict}
+
+AANPAK
+	 - [v] 432125906.json aanpassen -> inkomens in gewenste structuur
+	 - [v] spaarrekening OUD maken
+	 - [v] spaarrekening NIEUW maken
+	 - [v] methods maken om alles netjes in te kunnen lezen (personen, bedrijven, subcategorie nog te doen)
+	 - [v] methods maken on netjes transacties (debuggen met een dummy transactie), personen en bedrijven te kunnen toevoegen
+		 - [ ] nog eventjes nadenken hoe: transactie definieren binnen Bankrekening of buiten Bankrekening en dan toevoegen (lijkt me logischer)
+	 - [v] ervoor zorgen dat @property tabel netjes werkt
+	 
+	 - [@] nu pas beginnen met code schrijven om nieuwe transacties te genereren vanuit exceldata
+	 
+	 - [v] alle ibans langsgaan in bedrijven
+		 - [v] indien van een cpsp -> koppelen aan cpsp
+	 - [v] bic verwijderen uit de data
+	 
+	 - [v] banken toegevoegd aan cpsp bijlangs lopen -> IBANS

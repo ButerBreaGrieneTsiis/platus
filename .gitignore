@@ -1,4 +1,5 @@
 .venv
-.dev
+.vscode
+.gitignore
 **/__pycache__
 *.egg-info
