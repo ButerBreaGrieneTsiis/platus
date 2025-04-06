@@ -15,7 +15,7 @@ def verwerken():
     maand   =   invoer_validatie("maand", int, bereik = (1, dt.datetime.now().month) if jaar == dt.datetime.now().year else (1, 12))
     
     bankrekening.verwerken(jaar, maand)
-    bankrekening.opslaan()
+    # bankrekening.opslaan()
     
 def verwerken_excel(
                     rekeningnummer  : str,

@@ -4,7 +4,7 @@ import platus
 def decoder(dictionary, **kwargs):
     
     mapping     =   {
-                        "transactie": (frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "betaalmethode", "datumtijd", "dagindex", "cat_uuid","rekeningnummer","uuid", "details", "derde_uuid")), platus.Transactie.van_json),
+                        "transactie": (frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid","rekeningnummer","uuid", "details", "derde_uuid")), platus.Transactie.van_json),
                         "categorie" : (frozenset(("naam", "hoofdcategorie", "bedrijven", "trefwoorden")), platus.Categorie.van_json),
                         "hoofdcategorie" : (frozenset(("naam",)), platus.HoofdCategorie.van_json),
                         "persoon": (frozenset(("naam", "iban", "rekeningnummer", "giro", "groep")), platus.Persoon.van_json),

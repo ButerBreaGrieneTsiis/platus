@@ -11,20 +11,24 @@ from .invoer import invoer_validatie
 
 locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
 
+muntsoorten         =   open_json("gegevens\\config",   "muntsoorten",      "json")
+categorieen         =   open_json("gegevens\\config",   "categorieen",      "json", kwargs = {"class": "categorie"})
+hoofdcategorieen    =   open_json("gegevens\\config",   "hoofdcategorieen", "json", kwargs = {"class": "hoofdcategorie"})
+
 class Transactie:
     
     def __init__(self,
-                 bedrag         : int,
-                 beginsaldo     : int,
-                 eindsaldo      : int,
-                 betaalmethode  : str,
-                 datumtijd      : dt.datetime,
-                 cat_uuid       : str,
-                 derde_uuid     : str,
-                 rekeningnummer : str,
-                 index          : int   =   0,
-                 dagindex       : int   =   0,
-                 details        : dict  =   None,
+                 bedrag             : int,
+                 beginsaldo         : int,
+                 eindsaldo          : int,
+                 transactiemethode  : str,
+                 datumtijd          : dt.datetime,
+                 cat_uuid           : str,
+                 derde_uuid         : str,
+                 rekeningnummer     : str,
+                 index              : int   =   0,
+                 dagindex           : int   =   0,
+                 details            : dict  =   None,
                  ):
         
         assert eindsaldo == beginsaldo + bedrag
@@ -33,7 +37,7 @@ class Transactie:
         self.bedrag             =   bedrag
         self.beginsaldo         =   beginsaldo
         self.eindsaldo          =   eindsaldo
-        self.betaalmethode      =   betaalmethode
+        self.transactiemethode  =   transactiemethode
         self.datumtijd          =   datumtijd
         self.dagindex           =   dagindex
         self.cat_uuid           =   cat_uuid
@@ -41,6 +45,82 @@ class Transactie:
         self.rekeningnummer     =   rekeningnummer
         self.details            =   dict() if details is None else details
     
+    def __repr__(self):
+        
+        richting    =   "uitgave" if self.bedrag < 0 else "inkomst"
+        datumtijd   =   self.datumtijd.strftime("%A %d %B %Y") if self.datumtijd.time() == dt.time(0,0) else ("%A %d %B %Y om %H:%M")
+        lijn_transactie     =   f"{richting} van {self.toon_bedrag()} op {datumtijd},"
+        
+        if self.derde_uuid == "":
+            toon_derde  =   "\"onbekend\""
+        else:
+            personen                =   open_json("gegevens\\derden",   "personen",             "json", kwargs = {"class": "persoon"})
+            bedrijven               =   open_json("gegevens\\derden",   "bedrijven",            "json", kwargs = {"class": "bedrijf"})
+            bankrekeningen          =   open_json("gegevens\\config",   "bankrekeningen",       "json")
+            cpsps                   =   open_json("gegevens\\derden",   "cpsp",                 "json")
+            
+            if self.derde_uuid in personen.keys():
+                persoon     =   personen.get(self.derde_uuid)
+                toon_derde  =   f"persoon \"{persoon.naam}\"" if persoon.groep == "ongegroepeerd" else f"persoon \"{persoon.naam}\" ({persoon.groep})"
+            elif self.derde_uuid in bedrijven.keys():
+                bedrijf     =   bedrijven.get(self.derde_uuid)
+                toon_derde  =   f"bedrijf \"{bedrijf.naam}\""
+            elif self.derde_uuid in bankrekeningen.keys():
+                bankrekening=   bankrekeningen.get(self.derde_uuid)
+                toon_derde  =   f"bankrekening {bankrekening.naam}"
+            
+        if self.transactiemethode == "pinbetaling" or self.methode == "geldopname":
+            lijn_derde  =   f"aan {toon_derde} per {self.methode} in {self.details["locatie"]} ({self.details["land"]})"
+        elif self.transactiemethode == "bankkosten" or self.transactiemethode == "spaarrente":
+            lijn_derde  =   f"voor {self.transactiemethode}"
+        else:
+            if richting    ==  "uitgave":
+                richtingswoord  =   "aan"
+            else:
+                richtingswoord  =   "van"
+            
+            if "cpsp_uuid" in self.details.keys():
+                toon_medium     =   f"(via \"{cpsps.get(self.details["cpsp_uuid"])["naam"]})\""
+            else:
+                toon_medium     =   ""    
+            
+            if self.betalingsomschrijving == "":
+                lijn_derde  =   f"{richtingswoord} {toon_derde} per {self.methode} {toon_medium}"
+            else:
+                lijn_derde  =   f"{richtingswoord} {toon_derde} per {self.methode} {toon_medium} voor \"{self.betalingsomschrijving}\""   
+        
+        if self.categorie != "":
+            lijn_categorie  =   f"categorie: {hoofdcategorieen.get(categorieen.get(self.cat_uuid))["hoofdcategorie"]}, subcategorie: {categorieen.get(self.cat_uuid)}"
+            return f"\t{lijn_transactie}\n\t{lijn_derde}\n\t{lijn_categorie}"
+        else:
+            return f"\t{lijn_transactie}\n\t{lijn_derde}"
+    
+    def toon_bedrag(self):
+        
+        def toon_bedrag_iso(bedrag, valuta_iso):
+            
+            valuta_dict     =   next(muntsoort for muntsoort in muntsoorten if muntsoort["ISO 4217"] == valuta_iso)
+            
+            if valuta_dict["ervoor"]:
+                return f"{valuta_dict['symbool']}{' '*valuta_dict['spatie']}{bedrag}"
+            else:
+                return f"{bedrag}{' '*valuta_dict['spatie']}{valuta_dict['symbool']}"
+            # return f"{regel_euro_print} ({regel_valuta_print})"
+        
+        bedrag_euro         =   self.bedrag / 100
+        
+        bedrag_euro_print   =   str(int(bedrag_euro))+",- " if bedrag_euro % 1 == 0 else f"{bedrag_euro:.2f}".replace('.',',')
+        regel_euro_print    =   toon_bedrag_iso(bedrag_euro_print, "EUR")
+        
+        if "valuta_iso" in self.details.keys():
+            
+            bedrag_valuta       =   self.details["valuta_bedrag"] / 100
+            bedrag_valuta_print =   str(int(bedrag_valuta))+",- " if bedrag_valuta % 1 == 0 else f"{bedrag_valuta:.2f}".replace('.',',')
+            regel_valuta_print  =   toon_bedrag_iso(bedrag_valuta_print, self.details["valuta_iso"])
+            return f"{regel_euro_print} ({regel_valuta_print})"
+        else:
+            return regel_euro_print
+        
     @classmethod
     def van_json(cls, **transactie_dict: dict):
         
@@ -50,17 +130,17 @@ class Transactie:
             datumtijd   =   dt.datetime.strptime(transactie_dict["datumtijd"], "%Y-%m-%dT%H:%M")
         
         return cls(
-                    index           =   transactie_dict["index"],
-                    bedrag          =   transactie_dict["bedrag"],
-                    beginsaldo      =   transactie_dict["beginsaldo"],
-                    eindsaldo       =   transactie_dict["eindsaldo"],
-                    betaalmethode   =   transactie_dict["betaalmethode"],
-                    datumtijd       =   datumtijd,
-                    dagindex        =   transactie_dict["dagindex"],
-                    cat_uuid        =   transactie_dict["cat_uuid"],
-                    derde_uuid      =   transactie_dict["derde_uuid"],
-                    rekeningnummer  =   transactie_dict["rekeningnummer"],
-                    details         =   transactie_dict["details"] if "details" in transactie_dict.keys() else None,
+                    index               =   transactie_dict["index"],
+                    bedrag              =   transactie_dict["bedrag"],
+                    beginsaldo          =   transactie_dict["beginsaldo"],
+                    eindsaldo           =   transactie_dict["eindsaldo"],
+                    transactiemethode   =   transactie_dict["transactiemethode"],
+                    datumtijd           =   datumtijd,
+                    dagindex            =   transactie_dict["dagindex"],
+                    cat_uuid            =   transactie_dict["cat_uuid"],
+                    derde_uuid          =   transactie_dict["derde_uuid"],
+                    rekeningnummer      =   transactie_dict["rekeningnummer"],
+                    details             =   transactie_dict["details"] if "details" in transactie_dict.keys() else None,
                     )
     
     def naar_json(self):
@@ -72,30 +152,30 @@ class Transactie:
         
         if self.details == {}:
             return {
-                    "index":            self.index,
-                    "bedrag":           self.bedrag,
-                    "beginsaldo":       self.beginsaldo,
-                    "eindsaldo":        self.eindsaldo,
-                    "betaalmethode":    self.betaalmethode,
-                    "datumtijd":        datumtijd,
-                    "dagindex":         self.dagindex,
-                    "cat_uuid":         self.cat_uuid,
-                    "derde_uuid":       self.derde_uuid,
-                    "rekeningnummer":   self.rekeningnummer,
+                    "index":                self.index,
+                    "bedrag":               self.bedrag,
+                    "beginsaldo":           self.beginsaldo,
+                    "eindsaldo":            self.eindsaldo,
+                    "transactiemethode":    self.transactiemethode,
+                    "datumtijd":            datumtijd,
+                    "dagindex":             self.dagindex,
+                    "cat_uuid":             self.cat_uuid,
+                    "derde_uuid":           self.derde_uuid,
+                    "rekeningnummer":       self.rekeningnummer,
                     }
         else:
             return {
-                    "index":            self.index,
-                    "bedrag":           self.bedrag,
-                    "beginsaldo":       self.beginsaldo,
-                    "eindsaldo":        self.eindsaldo,
-                    "betaalmethode":    self.betaalmethode,
-                    "datumtijd":        datumtijd,
-                    "dagindex":         self.dagindex,
-                    "cat_uuid":         self.cat_uuid,
-                    "derde_uuid":       self.derde_uuid,
-                    "rekeningnummer":   self.rekeningnummer,
-                    "details":          self.details,
+                    "index":                self.index,
+                    "bedrag":               self.bedrag,
+                    "beginsaldo":           self.beginsaldo,
+                    "eindsaldo":            self.eindsaldo,
+                    "transactiemethode":    self.transactiemethode,
+                    "datumtijd":            datumtijd,
+                    "dagindex":             self.dagindex,
+                    "cat_uuid":             self.cat_uuid,
+                    "derde_uuid":           self.derde_uuid,
+                    "rekeningnummer":       self.rekeningnummer,
+                    "details":              self.details,
                     }
     
     def naar_tabel(self, 
@@ -115,17 +195,17 @@ class Transactie:
         derde                   =   personen[self.derde_uuid] if self.derde_uuid in personen.keys() else (bedrijven[self.derde_uuid] if self.derde_uuid in bedrijven.keys() else bankrekeningen[self.derde_uuid])
         
         return {
-                "index":            self.index,
-                "bedrag":           self.bedrag,
-                "beginsaldo":       self.beginsaldo,
-                "eindsaldo":        self.eindsaldo,
-                "betaalmethode":    self.betaalmethode,
-                "datumtijd":        self.datumtijd,
-                "dagindex":         self.dagindex,
-                "hoofdcategorie":   hoofdcategorieen[categorieen[self.cat_uuid].hoofdcategorie].naam,
-                "categorie":        categorieen[self.cat_uuid].naam,
-                "derde":            derde["naam"] if isinstance(derde, dict) else derde.naam,
-                "type":             "bankrekening" if isinstance(derde, dict) else derde.type,
+                "index":                self.index,
+                "bedrag":               self.bedrag,
+                "beginsaldo":           self.beginsaldo,
+                "eindsaldo":            self.eindsaldo,
+                "transactiemethode":    self.transactiemethode,
+                "datumtijd":            self.datumtijd,
+                "dagindex":             self.dagindex,
+                "hoofdcategorie":       hoofdcategorieen[categorieen[self.cat_uuid].hoofdcategorie].naam,
+                "categorie":            categorieen[self.cat_uuid].naam,
+                "derde":                derde["naam"] if isinstance(derde, dict) else derde.naam,
+                "type":                 "bankrekening" if isinstance(derde, dict) else derde.type,
                 }
     
     @classmethod
@@ -147,19 +227,19 @@ class Transactie:
         
         if rij.omschrijving.casefold().startswith("rente"):
             
-            betaalmethode   =   "rente"
-            cat_uuid        =   "b123402b-7d55-4eb1-9eac-c41df3c784c4"
-            derde_uuid      =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
+            transactiemethode   =   "rente"
+            cat_uuid            =   "b123402b-7d55-4eb1-9eac-c41df3c784c4"
+            derde_uuid          =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
             details["betalingsomschrijving"]    =   rij.omschrijving.strip()
         
         elif rij.omschrijving.casefold().startswith("BEA, Betaalpas".casefold()) or rij.omschrijving.casefold().startswith("GEA, Betaalpas".casefold()):
             
             if rij.omschrijving.casefold().startswith("BEA, Betaalpas".casefold()):
-                betaalmethode   =   "pinbetaling" 
-                cat_uuid        =   ""
+                transactiemethode   =   "pinbetaling" 
+                cat_uuid            =   ""
             else:
-                betaalmethode   =   "pinbetaling" 
-                cat_uuid        =   "6507437f-f21a-4458-bbdd-1ed7c2f5cebd"
+                transactiemethode   =   "pinbetaling" 
+                cat_uuid            =   "6507437f-f21a-4458-bbdd-1ed7c2f5cebd"
             
             patroon_pinpas      =   re.compile(r"(?i)^(?:B|G)EA, Betaalpas\s+(?P<derde_naam>.*),PAS(?P<pasnummer>\d{3})\s+NR:(?P<terminal>.*),?\s+(?P<datumtijd>\d{2}.\d{2}.\d{2}\/\d{2}(.?:|.)\d{2})\s+(?P<locatie>.*)$")
             resultaat_pinpas    =   patroon_pinpas.match(rij.omschrijving).groupdict()
@@ -187,7 +267,7 @@ class Transactie:
             if rij.omschrijving.startswith("SEPA Overboeking"):
                 if "Betalingskenm.:" in rij.omschrijving or "Kenmerk:" in rij.omschrijving:
                     if "Betalingskenm.:" in rij.omschrijving:
-                        patroon_overboeking =   re.compile(r"(?i)^SEPA Overboeking\s*IBAN:\s(?P<iban>\S*)\s*BIC:\s(?P<bic>\S*)\s*Naam:\s(?P<naam>.*)\s*Omschrijving:\s(?P<betalingsomschrijving>.*)\s*Betalingskenm.:\s(?P<betalingskenmerk>.*)$")
+                        patroon_overboeking =   re.compile(r"(?i)^SEPA Overboeking\s*IBAN:\s(?P<iban>\S*)\s*BIC:\s(?P<bic>\S*)\s*Naam:\s(?P<naam>.*)\s*Betalingskenm.:\s(?P<betalingskenmerk>.*)$")
                     else:
                         patroon_overboeking =   re.compile(r"(?i)^SEPA Overboeking\s*IBAN:\s(?P<iban>\S*)\s*BIC:\s(?P<bic>\S*)\s*Naam:\s(?P<naam>.*)\s*Omschrijving:\s(?P<betalingsomschrijving>.*)\s*Kenmerk:\s(?P<betalingskenmerk>.*)$")
                 elif "Omschrijving:" in rij.omschrijving:
@@ -199,7 +279,6 @@ class Transactie:
                     patroon_overboeking     =   re.compile(r"(?i)^\/TRTP\/SEPA OVERBOEKING\/IBAN\/(?P<iban>.*)\/BIC\/(?P<bic>.*)\/NAME\/(?P<naam>.*)\/REMI\/(?P<betalingsomschrijving>.*)\/EREF\/(?P<betalingskenmerk>.*)$")
                 else:
                     patroon_overboeking     =   re.compile(r"(?i)^\/TRTP\/SEPA OVERBOEKING\/IBAN\/(?P<iban>.*)\/BIC\/(?P<bic>.*)\/NAME\/(?P<naam>.*)\/EREF\/(?P<betalingskenmerk>.*)$")
-            
             resultaat_overboeking   =   patroon_overboeking.match(rij.omschrijving).groupdict()
             
             iban                    =   resultaat_overboeking.get("iban").strip()
@@ -213,7 +292,7 @@ class Transactie:
             
             if "Tikkie".casefold() in betalingsomschrijving.casefold():
                 
-                betaalmethode       =   "betaalverzoek"
+                transactiemethode       =   "betaalverzoek"
                 
                 details["bank_uuid"]=   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
                 
@@ -228,7 +307,7 @@ class Transactie:
                 details["betalingsomschrijving"]    =   resultaat_tikkie.get("betalingsomschrijving_tikkie")
                 
             else:
-                betaalmethode     =   "overboeking"
+                transactiemethode       =   "overboeking"
                 
                 if not betalingsomschrijving == "":
                     details["betalingsomschrijving"]    =   betalingsomschrijving
@@ -259,7 +338,7 @@ class Transactie:
             
             if "betaalverzoek" in naam.casefold() or "betaalverzoek" in betalingsomschrijving.casefold() or "tikkie" in naam.casefold() or "tikkie" in betalingsomschrijving.casefold() or "bunq b.v." in naam.casefold() or "abn amro" in naam.casefold():
                 
-                betaalmethode       =   "betaalverzoek"
+                transactiemethode           =   "betaalverzoek"
                 
                 if "asn" in naam.casefold():
                     
@@ -272,8 +351,9 @@ class Transactie:
                     
                     bank_uuid               =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
                     derde_iban              =   iban_zoeker(betalingsomschrijving)
-                    print(betalingsomschrijving, betalingskenmerk)
-                    derde_naam              =   betalingsomschrijving.split(betalingskenmerk)[1].split(derde_iban)[0].strip()
+                    for aantal_spaties in range(betalingsomschrijving.count(" ")): # fix voor indien betalingskenmerk spaties bevat
+                        if betalingskenmerk in betalingsomschrijving.replace(" ", "", aantal_spaties):
+                            derde_naam      =   betalingsomschrijving.replace(" ", "", aantal_spaties).split(betalingskenmerk)[1].split(derde_iban)[0].strip()
                     betalingsomschrijving   =   ""
                 
                 elif "rabo" in betalingsomschrijving.casefold():
@@ -305,7 +385,7 @@ class Transactie:
                 
             else:
                 
-                betaalmethode           =   "ideal"
+                transactiemethode                   =   "ideal"
                 
                 details["betalingsomschrijving"]    =   betalingsomschrijving
                 details["betalingskenmerk"]         =   betalingskenmerk
@@ -320,20 +400,24 @@ class Transactie:
         
         elif "SEPA Incasso algemeen doorlopend".casefold() in rij.omschrijving.casefold():
             
-            betaalmethode   =   "incasso"
+            transactiemethode       =   "incasso"
             
             if rij.omschrijving.casefold().startswith("/trtp/".casefold()):
                 patroon_incasso     =   re.compile(r"(?i)^\/TRTP\/SEPA Incasso algemeen doorlopend\/CSID\/(?P<incassant>.*)\/NAME\/(?P<naam>.*)\/MARF\/(?P<machtiging>.*)\/REMI\/(?P<betalingsomschrijving>.*)\/IBAN\/(?P<iban>.*)\/BIC\/(?P<bic>.*)\/EREF\/(?P<betalingskenmerk>.*)$")
             else:
-                patroon_incasso     =   re.compile(r"(?i)^SEPA Incasso algemeen doorlopend\s*Incassant:\s(?P<incassant>.*)\s*Naam:\s(?P<naam>.*)\s*Machtiging:\s(?P<machtiging>.*)\s*Omschrijving:\s(?P<betalingsomschrijving>.*)\s*IBAN:\s(?P<iban>.*)$")
-            
+                if "Kenmerk:".casefold() in rij.omschrijving.casefold():
+                    patroon_incasso     =   re.compile(r"(?i)^SEPA Incasso algemeen doorlopend\s*Incassant:\s(?P<incassant>.*)\s*Naam:\s(?P<naam>.*)\s*Machtiging:\s(?P<machtiging>.*)\s*Omschrijving:\s(?P<betalingsomschrijving>.*)\s*IBAN:\s(?P<iban>.*)\s*Kenmerk:\s(?P<betalingskenmerk>.*)$")
+                elif "IBAN:".casefold() in rij.omschrijving.casefold():
+                    patroon_incasso     =   re.compile(r"(?i)^SEPA Incasso algemeen doorlopend\s*Incassant:\s(?P<incassant>.*)\s*Naam:\s(?P<naam>.*)\s*Machtiging:\s(?P<machtiging>.*)\s*Omschrijving:\s(?P<betalingsomschrijving>.*)\s*IBAN:\s(?P<iban>.*)$")
+                else:
+                    patroon_incasso     =   re.compile(r"(?i)^SEPA Incasso algemeen doorlopend\s*Incassant:\s(?P<incassant>.*)\s*Naam:\s(?P<naam>.*)\s*Machtiging:\s(?P<machtiging>.*)\s*Omschrijving:\s(?P<betalingsomschrijving>.*)$")
             resultaat_incasso       =   patroon_incasso.match(rij.omschrijving).groupdict()
             
             incassant               =   resultaat_incasso.get("incassant").strip()
             naam                    =   resultaat_incasso.get("naam").strip()
             machtiging              =   resultaat_incasso.get("machtiging").strip()
             betalingsomschrijving   =   resultaat_incasso.get("betalingsomschrijving").strip()
-            iban                    =   resultaat_incasso.get("iban").strip()
+            iban                    =   resultaat_incasso.get("iban","").strip()
             bic                     =   resultaat_incasso.get("bic", "").strip()
             betalingskenmerk        =   resultaat_incasso.get("betalingskenmerk", "").strip()
             
@@ -349,20 +433,28 @@ class Transactie:
                     break
             else:
                 derde_uuid, cat_uuid    =   cls.verwerken_derde_uuid(derde_iban = iban, derde_naam = naam)
+        
+        elif rij.omschrijving.casefold().startswith("ABN AMRO".casefold()):
+            
+            transactiemethode   =   "bankkosten"
+            
+            derde_uuid          =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
+            cat_uuid            =   "d188a43a-fb79-4a83-844d-6feb78855924"
+            details["betalingsomschrijving"]    =   rij.omschrijving
             
         else:
             print(rij.omschrijving)
             raise NotImplementedError
         
-        return cls(bedrag           =   bedrag,
-                   beginsaldo       =   beginsaldo,
-                   eindsaldo        =   eindsaldo,
-                   betaalmethode    =   betaalmethode,
-                   datumtijd        =   datumtijd,
-                   cat_uuid         =   cat_uuid,
-                   derde_uuid       =   derde_uuid,
-                   rekeningnummer   =   rekeningnummer,
-                   details          =   details,
+        return cls(bedrag               =   bedrag,
+                   beginsaldo           =   beginsaldo,
+                   eindsaldo            =   eindsaldo,
+                   transactiemethode    =   transactiemethode,
+                   datumtijd            =   datumtijd,
+                   cat_uuid             =   cat_uuid,
+                   derde_uuid           =   derde_uuid,
+                   rekeningnummer       =   rekeningnummer,
+                   details              =   details,
                    )
     
     @staticmethod
@@ -507,7 +599,7 @@ class Bankrekening:
         
         for _, rij in bankexport.iterrows():
             transactie  =   Transactie.van_bankexport(rij)
-            print(transactie.__dict__)
+            print(transactie)
             self.toevoegen_transactie(transactie)
     
     @property
@@ -524,8 +616,6 @@ class Bankrekening:
         personen                    =   open_json("gegevens\\derden",    "personen", "json", kwargs = {"class": "persoon"})
         bedrijven                   =   open_json("gegevens\\derden",    "bedrijven", "json", kwargs = {"class": "bedrijf"})
         eigen_bankrekeningen        =   open_json("gegevens\\config",    "bankrekeningen", "json")
-        categorieen                 =   open_json("gegevens\\config",    "categorieen", "json", kwargs = {"class": "categorie"})
-        hoofdcategorieen            =   open_json("gegevens\\config",    "hoofdcategorieen", "json", kwargs = {"class": "hoofdcategorie"})
         
         return pandas.DataFrame([transactie.naar_tabel(personen             =   personen,
                                                 bedrijven            =   bedrijven,
