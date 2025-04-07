@@ -34,10 +34,9 @@ class Derde:
             if isinstance(waarde, bool):
                 if not waarde:
                     continue
+            if waarde is None:
+                continue
             derde_dict[veld]    =   waarde
-        
-        del derde_dict["uuid"]
-        del derde_dict["type"]
         
         return derde_dict
     
@@ -96,7 +95,7 @@ class Bedrijf(Derde):
                  rekeningnummer :   list    =   None,
                  iban           :   list    =   None,
                  giro           :   list    =   None,
-                 categorie      :   str     =   None
+                 cat_uuid       :   str     =   None,
                  ):
         
         super().__init__(naam           =   naam,
@@ -108,4 +107,25 @@ class Bedrijf(Derde):
         
         self.synoniemen     =   list() if synoniemen is None else synoniemen
         self.uitsluiten     =   uitsluiten
-        self.categorie      =     categorie
+        self.cat_uuid       =   cat_uuid
+
+class CPSP(Derde):
+
+    def __init__(self,
+                 naam           :   str,
+                 synoniemen     :   list    =   None,
+                 uitsluiten     :   bool    =   False,
+                 rekeningnummer :   list    =   None,
+                 iban           :   list    =   None,
+                 giro           :   list    =   None,
+                 ):
+        
+        super().__init__(naam           =   naam,
+                         type           =   "cpsp",
+                         iban           =   iban,
+                         rekeningnummer =   rekeningnummer,
+                         giro           =   giro,
+                         )
+        
+        self.synoniemen     =   list() if synoniemen is None else synoniemen
+        self.uitsluiten     =   uitsluiten
