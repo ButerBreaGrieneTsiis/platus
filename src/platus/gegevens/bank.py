@@ -301,6 +301,8 @@ class Transactie:
                     derde_uuid, cat_uuid    =   cls.verwerken_derde_uuid(derde_naam = naam)
                     details["cpsp_uuid"]    =   cpsp_uuid
                     tijdelijk["medium_iban"]=   iban
+                
+                details     =   cls.verwerken_inkomen(derde_uuid, datumtijd, details, bedrag)
             
             tijdelijk["naam"]   =   naam
             tijdelijk["bic"]    =   bic
@@ -566,6 +568,36 @@ class Transactie:
                 if trefwoord in betalingsomschrijving.casefold():
                     return cat_uuid
         return None        
+    
+    @staticmethod
+    def verwerken_inkomen(derde_uuid: str, datumtijd: dt.datetime.date, details: dict, bedrag: int) -> dict:
+        
+        inkomen_json    =   open_json("gegevens\\config", "inkomen", "json")
+        
+        if derde_uuid in inkomen_json.keys():
+            
+            inkomen         =   inkomen_json[derde_uuid]
+            salarisstrook   =   open_json(f"{inkomen['pad']}", dt.datetime.strftime(datumtijd, "%Y-%m"), "json")
+            
+            if int(round(100 * salarisstrook["netPay"]["value"])) == bedrag:
+                
+                details["inkomen"]  =   {}
+                
+                for cat_uuid, trefwoorden in inkomen["inkomen"].items():
+                    for salarisstrook_dict in salarisstrook["earningsData"]:
+                        if any([trefwoord in salarisstrook_dict["codeName"].casefold() for trefwoord in trefwoorden]):
+                            if cat_uuid not in details["inkomen"].keys():
+                                details["inkomen"][cat_uuid] = 0
+                            details["inkomen"][cat_uuid] += int(round(100 * salarisstrook_dict["value"]))
+                
+                for cat_uuid, trefwoorden in inkomen["uitgave"].items():
+                    for salarisstrook_dict in salarisstrook["deductionsData"]:
+                        if any([trefwoord in salarisstrook_dict["codeName"].casefold() for trefwoord in trefwoorden]):
+                            if cat_uuid not in details["inkomen"].keys():
+                                details["inkomen"][cat_uuid] = 0
+                            details["inkomen"][cat_uuid] -= int(round(100 * salarisstrook_dict["value"]))
+        
+        return details
     
     def opdracht(self):     
         
@@ -924,6 +956,7 @@ class Transactie:
         return None
 
 class Bankrekening: 
+    
     
     def __init__(self,
                  naam               :   str,
