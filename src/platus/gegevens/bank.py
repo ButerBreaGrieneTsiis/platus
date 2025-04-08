@@ -90,7 +90,7 @@ class Transactie:
     
     def toon_bedrag(self):
         
-        muntsoorten         =   open_json("gegevens\\config",   "muntsoorten",      "json")
+        muntsoorten         =   open_json("gegevens\\config", "muntsoort", "json")
         
         def toon_bedrag_iso(bedrag, valuta_iso):
             
@@ -325,47 +325,11 @@ class Transactie:
                 
                 transactiemethode           =   "betaalverzoek"
                 
-                if "asn" in naam.casefold():
-                    
-                    bank_uuid               =   "3de40e75-c036-41f5-9e6d-112ee6b26c93"
-                    derde_iban              =   iban_zoeker(betalingsomschrijving)
-                    derde_naam              =   betalingsomschrijving.split(" ",1)[0]
-                    betalingsomschrijving   =   betalingsomschrijving.split(f"{derde_iban}")[1].replace(f"{derde_iban}","").strip()
-                
-                elif "tikkie" in betalingsomschrijving.casefold() or "tikkie" in naam.casefold() or "abn amro" in naam.casefold():
-                    
-                    bank_uuid               =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
-                    derde_iban              =   iban_zoeker(betalingsomschrijving)
-                    for aantal_spaties in range(betalingsomschrijving.count(" ")): # fix voor indien betalingskenmerk spaties bevat
-                        if betalingskenmerk in betalingsomschrijving.replace(" ", "", aantal_spaties):
-                            derde_naam      =   betalingsomschrijving.replace(" ", "", aantal_spaties).split(betalingskenmerk)[1].split(derde_iban)[0].strip()
-                    betalingsomschrijving   =   ""
-                
-                elif "rabo" in naam.casefold():
-                    
-                    bank_uuid               =   "18e6fc70-35cd-4bc7-a713-29be66a177f1"
-                    derde_iban              =   iban_zoeker(betalingsomschrijving)
-                    derde_naam              =   betalingsomschrijving.split(f"{betalingskenmerk}")[1].strip()
-                    betalingsomschrijving   =   ""
-                
-                elif "bunq" in betalingsomschrijving.casefold():
-                    
-                    bank_uuid               =   "4d2d88d4-b8d3-46ca-85f4-55fa5b364bb3"
-                    derde_iban              =   iban_zoeker(betalingsomschrijving)
-                    derde_naam              =   betalingsomschrijving.split(f"{derde_iban}")[1].split(f"{betalingskenmerk}")[0].strip()
-                    betalingsomschrijving   =   ""
-                
-                elif "ingb" in betalingsomschrijving.casefold():
-                
-                    bank_uuid               =   "cf541b4f-1fee-4562-a47b-2792d7ca42e6"
-                    derde_iban              =   iban_zoeker(betalingsomschrijving)
-                    derde_naam              =   betalingsomschrijving.split(f"{derde_iban}")[0].strip()
-                    betalingsomschrijving   =   betalingsomschrijving.split(f"{betalingskenmerk}")[1].split("ING")[0].strip()
-                
-                derde_uuid, cat_uuid    =   cls.verwerken_derde_uuid(derde_iban = derde_iban, derde_naam = derde_naam)
+                bank_uuid, derde_iban, derde_naam, betalingsomschrijving    =   cls.verwerken_bank_uuid(naam = naam, betalingsomschrijving = betalingsomschrijving, betalingskenmerk = betalingskenmerk, bank_iban = iban)
+                derde_uuid, cat_uuid                                        =   cls.verwerken_derde_uuid(derde_iban = derde_iban, derde_naam = derde_naam)
                 
                 details["bank_uuid"]                =   bank_uuid
-                details["betalingsomschrijving"]    =   betalingsomschrijving
+                
                 details["betalingskenmerk"]         =   betalingskenmerk
                 tijdelijk["derde_iban"]             =   derde_iban
                 tijdelijk["derde_naam"]             =   derde_naam
@@ -386,7 +350,9 @@ class Transactie:
                     derde_uuid, cat_uuid    =   cls.verwerken_derde_uuid(derde_naam = naam)
                     details["cpsp_uuid"]    =   cpsp_uuid
                     tijdelijk["medium_iban"]=   iban
-                
+            
+            if not betalingsomschrijving == "":
+                    details["betalingsomschrijving"]    =   betalingsomschrijving
             tijdelijk["naam"]   =   naam
             tijdelijk["bic"]    =   bic
         
@@ -461,9 +427,9 @@ class Transactie:
     @staticmethod
     def verwerken_derde_uuid(**kwargs):
         
-        personen                =   open_json("gegevens\\derden",   "personen",             "json", kwargs = {"class": "persoon"})
-        bedrijven               =   open_json("gegevens\\derden",   "bedrijven",            "json", kwargs = {"class": "bedrijf"})
-        bankrekeningen          =   open_json("gegevens\\config",   "bankrekeningen",       "json")
+        personen                =   open_json("gegevens\\derden", "persoon",        "json", clss = "persoon")
+        bedrijven               =   open_json("gegevens\\derden", "bedrijf",        "json", clss = "bedrijf")
+        bankrekeningen          =   open_json("gegevens\\config", "bankrekening",   "json")
         
         if "derde_iban" in kwargs.keys():
             for uuid_bankrekening, bankrekening in bankrekeningen.items():
@@ -498,7 +464,7 @@ class Transactie:
     @staticmethod
     def verwerken_cpsp_uuid(naam: str, iban: str):
         
-        cpsps   =   open_json("gegevens\\derden", "cpsp", "json", kwargs = {"class": "cpsp"})
+        cpsps   =   open_json("gegevens\\derden", "cpsp", "json", clss = "cpsp")
         
         for cpsp_uuid, cpsp in cpsps.items():
             if cpsp.naam.casefold() in naam.casefold() or any([cpsp_synoniem.casefold() in naam.casefold() for cpsp_synoniem in cpsp.synoniemen]) or any([cpsp_iban == iban for cpsp_iban in cpsp.iban]):
@@ -509,9 +475,57 @@ class Transactie:
         return None
     
     @staticmethod
+    def verwerken_bank_uuid(naam: str, betalingsomschrijving: str, betalingskenmerk: str, bank_iban: str):
+        
+        banken   =   open_json("gegevens\\derden", "bank", "json", clss = "bank")
+        
+        if "asn" in naam.casefold():
+            
+            bank_uuid               =   "3de40e75-c036-41f5-9e6d-112ee6b26c93"
+            derde_iban              =   iban_zoeker(betalingsomschrijving)
+            derde_naam              =   betalingsomschrijving.split(" ",1)[0]
+            betalingsomschrijving   =   betalingsomschrijving.split(f"{derde_iban}")[1].replace(f"{derde_iban}","").strip()
+        
+        elif "tikkie" in betalingsomschrijving.casefold() or "tikkie" in naam.casefold() or "abn amro" in naam.casefold():
+            
+            bank_uuid               =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
+            derde_iban              =   iban_zoeker(betalingsomschrijving)
+            for aantal_spaties in range(betalingsomschrijving.count(" ")): # fix voor indien betalingskenmerk spaties bevat
+                if betalingskenmerk in betalingsomschrijving.replace(" ", "", aantal_spaties):
+                    derde_naam      =   betalingsomschrijving.replace(" ", "", aantal_spaties).split(betalingskenmerk)[1].split(derde_iban)[0].strip()
+            betalingsomschrijving   =   ""
+        
+        elif "rabo" in naam.casefold():
+            
+            bank_uuid               =   "18e6fc70-35cd-4bc7-a713-29be66a177f1"
+            derde_iban              =   iban_zoeker(betalingsomschrijving)
+            derde_naam              =   betalingsomschrijving.split(f"{betalingskenmerk}")[1].strip()
+            betalingsomschrijving   =   ""
+        
+        elif "bunq" in betalingsomschrijving.casefold():
+            
+            bank_uuid               =   "4d2d88d4-b8d3-46ca-85f4-55fa5b364bb3"
+            derde_iban              =   iban_zoeker(betalingsomschrijving)
+            derde_naam              =   betalingsomschrijving.split(f"{derde_iban}")[1].split(f"{betalingskenmerk}")[0].strip()
+            betalingsomschrijving   =   ""
+        
+        elif "ingb" in betalingsomschrijving.casefold():
+        
+            bank_uuid               =   "cf541b4f-1fee-4562-a47b-2792d7ca42e6"
+            derde_iban              =   iban_zoeker(betalingsomschrijving)
+            derde_naam              =   betalingsomschrijving.split(f"{derde_iban}")[0].strip()
+            betalingsomschrijving   =   betalingsomschrijving.split(f"{betalingskenmerk}")[1].split("ING")[0].strip()
+        
+        if bank_iban not in banken[bank_uuid].iban:
+            banken[bank_uuid].iban.append(bank_iban)
+            opslaan_json(banken, "gegevens\\derden", "cpsp", "json")
+        
+        return bank_uuid, derde_iban, derde_naam, betalingsomschrijving
+    
+    @staticmethod
     def verwerken_locatie(locatie_oud):
         
-        locatiebestand  =   open_json("gegevens\\config", "locaties", "json")
+        locatiebestand  =   open_json("gegevens\\config", "locatie", "json")
         return next((locatie for locatie, synoniemen in locatiebestand.items() for synoniem in synoniemen if synoniem == locatie_oud.casefold()), locatie_oud.capitalize())
     
     @staticmethod
@@ -519,7 +533,7 @@ class Transactie:
         
         if land_oud != "Nederland" and land_oud is not None:
             
-            landenbestand   =   open_json("gegevens\\config", "landen", "json")
+            landenbestand   =   open_json("gegevens\\config", "land", "json")
             
             if any([afkorting == land_oud.casefold() for afkortingen in landenbestand.values() for afkorting in afkortingen]):
                 return next(land for land, afkortingen in landenbestand.items() for afkorting in afkortingen in afkorting == land_oud.casefold())
@@ -536,7 +550,7 @@ class Transactie:
                     landenbestand[invoer_land] = [land_oud.casefold()]
                     print(f"Het land {invoer_land} is toegevoegd, alsmede de afkorting \"{land_oud.casefold()}\"\n")
                 
-                opslaan_json(landenbestand, "gegevens\\config", "landen", "json")
+                opslaan_json(landenbestand, "gegevens\\config", "land", "json")
                 
                 return invoer_land
         
@@ -545,7 +559,7 @@ class Transactie:
     @staticmethod
     def verwerken_cat_uuid(betalingsomschrijving: str) -> str:
         
-        categorieen     =   open_json("gegevens\\config", "categorieen", "json", kwargs = {"class": "categorie"})
+        categorieen     =   open_json("gegevens\\config", "categorie", "json", clss = "categorie")
         
         for cat_uuid, categorie in categorieen.items():
             for trefwoord in getattr(categorie, "trefwoorden"):
@@ -595,7 +609,7 @@ class Transactie:
                 invoer_trefwoord   =   opdracht.get("veld", "")
                 
                 if invoer_trefwoord != "":
-                    categorieen         =   open_json("gegevens\\config",   "categorieen",      "json", kwargs = {"class": "categorie"})
+                    categorieen         =   open_json("gegevens\\config", "categorie", "json", clss = "categorie")
                     
                     if any([invoer_trefwoord.casefold() == trefwoord for categorie in categorieen.values() for trefwoord in getattr(categorie, "trefwoorden")]):
                         categorie   =   next(categorie for cat_uuid, categorie in categorieen.items() for trefwoord in getattr(categorie, "trefwoorden") if invoer_trefwoord.casefold() == trefwoord)
@@ -603,7 +617,7 @@ class Transactie:
                         continue
                     else:
                         categorieen[self.cat_uuid].trefwoorden.append(invoer_trefwoord.casefold())
-                        opslaan_json(categorieen, "gegevens\\config", "categorieen", "json")
+                        opslaan_json(categorieen, "gegevens\\config", "categorie", "json")
                         print(f"het trefwoord \"{invoer_trefwoord.casefold()}\" is toegevoegd aan de categorie \"{self.categorie.naam} ({self.hoofdcategorie.naam})\"")
                         continue
                 else:
@@ -646,7 +660,7 @@ class Transactie:
         
         if veld == "derde_uuid":
             
-            if self.derde_uuid == "":
+            if self.derde_uuid == None:
                 if "naam" in self.tijdelijk.keys():
                     print(f"derde \"{self.tijdelijk.get('naam')}\" niet automatisch toegewezen, kies een bestaande of maak een nieuwe")
                 else:
@@ -676,13 +690,13 @@ class Transactie:
                             else:
                                 bedrijf     =   Bedrijf(naam)
                         
-                        bedrijven       =   open_json("gegevens\\derden", "bedrijven", "json", kwargs = {"class": "bedrijf"})
+                        bedrijven       =   open_json("gegevens\\derden", "bedrijf", "json", clss = "bedrijf")
                         bedrijven[uuid] =   bedrijf
                         self.derde_uuid =   uuid
-                        opslaan_json(bedrijven, "gegevens\\derden", "bedrijven", "json")
+                        opslaan_json(bedrijven, "gegevens\\derden", "bedrijf", "json")
                         break
                     else:
-                        persoonsgroepen =   open_json("gegevens\\config", "persoonsgroepen", "json")
+                        persoonsgroepen =   open_json("gegevens\\config", "persoonsgroep", "json")
                         persoonsgroep   =   invoer_kiezen("persoonsgroep", persoonsgroepen)
                         
                         if "derde_iban" in self.tijdelijk.keys():
@@ -690,10 +704,10 @@ class Transactie:
                         else:
                             persoon     =   Persoon(naam, persoonsgroep)
                         
-                        personen        =   open_json("gegevens\\derden", "personen", "json", kwargs = {"class": "persoon"})
+                        personen        =   open_json("gegevens\\derden", "persoon", "json", clss = "persoon")
                         personen[uuid]  =   persoon
                         self.derde_uuid =   uuid
-                        opslaan_json(personen, "gegevens\\derden", "personen", "json")
+                        opslaan_json(personen, "gegevens\\derden", "persoon", "json")
                         break
                 
                 elif opdracht.get("opdracht") == "zoek":
@@ -702,7 +716,7 @@ class Transactie:
                         continue
                     
                     if derde_type == "bedrijf":
-                        bedrijven       =   open_json("gegevens\\derden", "bedrijven", "json", kwargs = {"class": "bedrijf"})
+                        bedrijven       =   open_json("gegevens\\derden", "bedrijf", "json", clss = "bedrijf")
                         bedrijven_match_uuid    =   []
                         for bedrijf_uuid, bedrijf in bedrijven.items():
                             if opdracht.get("zoekterm").casefold() in bedrijf.naam.casefold():
@@ -721,11 +735,11 @@ class Transactie:
                             bedrijven[uuid].synoniemen.append(self.tijdelijk.get("naam").casefold())
                         if "derde_iban" in self.tijdelijk.keys():
                             bedrijven[uuid].iban.append(self.tijdelijk.get("derde_iban"))
-                        opslaan_json(bedrijven, "gegevens\\derden", "bedrijven", "json")
+                        opslaan_json(bedrijven, "gegevens\\derden", "bedrijf", "json")
                         break
                         
                     else:
-                        personen    =   open_json("gegevens\\derden", "bedrijven", "json", kwargs = {"class": "persoon"})
+                        personen    =   open_json("gegevens\\derden", "persoon", "json", clss = "persoon")
                         personen_match_uuid    =   []
                         for persoon_uuid, persoon in personen.items():
                             if opdracht.get("zoekterm").casefold() in persoon.naam.casefold():
@@ -742,7 +756,7 @@ class Transactie:
                         print(f"derde veranderd naar \"{personen[uuid].naam}\"")
                         if "derde_iban" in self.tijdelijk.keys():
                             personen[uuid].iban.append(self.tijdelijk.get("derde_iban"))
-                        opslaan_json(personen, "gegevens\\derden", "personen", "json")
+                        opslaan_json(personen, "gegevens\\derden", "persoon", "json")
                         break
                 else:
                     raise Exception
@@ -757,7 +771,7 @@ class Transactie:
                 if zoekterm == "":
                     continue
                 
-                cpsps       =   open_json("gegevens\\derden", "cpsp", "json", kwargs = {"class": "cpsp"})
+                cpsps       =   open_json("gegevens\\derden", "cpsp", "json", clss = "cpsp")
                 cpsps_match_uuid    =   []
                 for cpsp_uuid, cpsp in cpsps.items():
                     if zoekterm.casefold() in cpsp.naam.casefold():
@@ -781,8 +795,8 @@ class Transactie:
         
         elif veld == "cat_uuid":
             
-            categorieen         =   open_json("gegevens\\config",   "categorieen",      "json", kwargs = {"class": "categorie"})
-            hoofdcategorieen    =   open_json("gegevens\\config",   "hoofdcategorieen", "json", kwargs = {"class": "hoofdcategorie"})
+            categorieen         =   open_json("gegevens\\config", "categorie",      "json", clss = "categorie")
+            hoofdcategorieen    =   open_json("gegevens\\config", "hoofdcategorie", "json", clss = "hoofdcategorie")
             
             while True:
                 
@@ -795,7 +809,7 @@ class Transactie:
             print(f"categorie \"{categorieen[cat_uuid].naam}\" gekozen")
             self.cat_uuid       =   cat_uuid
             
-            bedrijven       =   open_json("gegevens\\derden", "bedrijven", "json", kwargs = {"class": "bedrijf"})
+            bedrijven       =   open_json("gegevens\\derden", "bedrijf", "json", clss = "bedrijf")
             if self.derde_uuid in bedrijven.keys():
                 if not bedrijven[self.derde_uuid].uitsluiten:
                     print(f"toevoegen categorie \"{self.categorie.naam} ({self.hoofdcategorie.naam})\" aan bedrijf \"{bedrijven[self.derde_uuid].naam}\"?")
@@ -804,7 +818,7 @@ class Transactie:
                         bedrijven[self.derde_uuid].cat_uuid     =   cat_uuid
                     elif toevoegen == "uitsluiten":
                         bedrijven[self.derde_uuid].uitsluiten   =   True
-                    opslaan_json(bedrijven, "gegevens\\derden", "bedrijven", "json")
+                    opslaan_json(bedrijven, "gegevens\\derden", "bedrijf", "json")
         
         elif veld == "opmerking":
             
@@ -820,13 +834,13 @@ class Transactie:
                     toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
                     if toevoegen == "ja":
                         locatie_oud     =   self.details["locatie"]
-                        locatiebestand  =   open_json("gegevens\\config", "locaties", "json")
+                        locatiebestand  =   open_json("gegevens\\config", "locatie", "json")
                         if any([locatie_nieuw.casefold() == locatie.casefold() for locatie in locatiebestand.keys()]):
                             locatiebestand[locatie_nieuw].append(locatie_oud)
                         else:
                             locatiebestand[locatie_nieuw]   =   [locatie_oud]
                         
-                        opslaan_json(locatiebestand,"gegevens\\config", "locaties", "json")
+                        opslaan_json(locatiebestand,"gegevens\\config", "locatie", "json")
                         
                     self.details["locatie"]     =   locatie_nieuw
                 
@@ -842,13 +856,13 @@ class Transactie:
                     toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
                     if toevoegen == "ja":
                         land_oud        =   self.details["land"]
-                        landenbestand   =   open_json("gegevens\\config", "landen", "json")
+                        landenbestand   =   open_json("gegevens\\config", "land", "json")
                         if any([land_nieuw.casefold() == land.casefold() for land in landenbestand.keys()]):
                             landenbestand[land_nieuw].append(land_oud)
                         else:
                             landenbestand[land_nieuw]   =   [land_oud]
                         
-                        opslaan_json(landenbestand,"gegevens\\config", "landen", "json")
+                        opslaan_json(landenbestand,"gegevens\\config", "land", "json")
                         
                     self.details["land"]     =   land_nieuw
                 
@@ -865,20 +879,20 @@ class Transactie:
     
     @property
     def categorie(self) -> Categorie:
-        categorieen         =   open_json("gegevens\\config",   "categorieen",      "json", kwargs = {"class": "categorie"})
+        categorieen         =   open_json("gegevens\\config", "categorie", "json", clss = "categorie")
         return categorieen.get(self.cat_uuid)
     
     @property
     def hoofdcategorie(self) -> HoofdCategorie:
-        hoofdcategorieen    =   open_json("gegevens\\config",   "hoofdcategorieen", "json", kwargs = {"class": "hoofdcategorie"})
+        hoofdcategorieen    =   open_json("gegevens\\config", "hoofdcategorie", "json", clss = "hoofdcategorie")
         return hoofdcategorieen.get(self.categorie.hoofdcat_uuid)
     
     @property
     def derde(self) -> Persoon | Bedrijf:
         
-        personen                =   open_json("gegevens\\derden",   "personen",             "json", kwargs = {"class": "persoon"})
-        bedrijven               =   open_json("gegevens\\derden",   "bedrijven",            "json", kwargs = {"class": "bedrijf"})
-        bankrekeningen          =   open_json("gegevens\\config",   "bankrekeningen",       "json")
+        personen                =   open_json("gegevens\\derden", "persoon",      "json", clss = "persoon")
+        bedrijven               =   open_json("gegevens\\derden", "bedrijf",      "json", clss = "bedrijf")
+        bankrekeningen          =   open_json("gegevens\\config", "bankrekening", "json")
         
         if self.derde_uuid is None:
             return bedrijven["f2892946-cc42-4d6f-8360-9b0d28249cd0"]
@@ -894,7 +908,7 @@ class Transactie:
     def medium(self) -> str:
         
         if "cpsp_uuid" in self.details.keys():
-            cpsps = open_json("gegevens\\derden", "cpsp", "json", kwargs = {"class": "cpsp"})
+            cpsps = open_json("gegevens\\derden", "cpsp", "json", clss = "cpsp")
             return cpsps[self.details.get("cpsp_uuid")]
         return None
     
@@ -902,7 +916,7 @@ class Transactie:
     def bank(self) -> str:
         
         if "bank_uuid" in self.details.keys():
-            banken = open_json("gegevens\\derden", "banken", "json")
+            banken = open_json("gegevens\\derden", "bank", "json", clss = "bank")
             return banken[self.details.get("bank_uuid")]
         return None
 
@@ -937,7 +951,7 @@ class Bankrekening:
                bankrekening_uuid  :   str,
                ):
         
-        eigen_bankrekeningen        =   open_json("gegevens\\config", "bankrekeningen", "json")
+        eigen_bankrekeningen        =   open_json("gegevens\\config", "bankrekening", "json")
         
         bankrekening_dict           =   {}
         
@@ -954,7 +968,7 @@ class Bankrekening:
             bankrekening_dict["actief_tot"]         =   dt.datetime.strptime(eigen_bankrekeningen[bankrekening_uuid]["actief tot"], "%Y-%m-%d")
             bankrekening_dict["actief"]             =   False
         
-        bankrekening_dict["transacties"]            =   open_json("gegevens\\bankrekeningen", bankrekening_uuid, "json", kwargs = {"class": "transactie"})
+        bankrekening_dict["transacties"]            =   open_json("gegevens\\bankrekeningen", bankrekening_uuid, "json", clss = "transactie")
         
         return cls(**bankrekening_dict)
     

@@ -1,20 +1,19 @@
 from uuid import uuid4
+from typing import List
 
 class Derde:
     
     def __init__(self, 
                  naam           :   str,
                  type           :   str,
-                 iban           :   list,
-                 rekeningnummer :   list,
-                 giro           :   list,
+                 iban           :   List[str],
+                 rekeningnummer :   List[str],
                  ):
         
         self.naam               =   naam
         self.type               =   type
         self.iban               =   list() if iban is None else iban
         self.rekeningnummer     =   list() if rekeningnummer is None else rekeningnummer
-        self.giro               =   list() if giro is None else giro
     
     @classmethod
     def van_json(cls, **subcategorie_dict: dict):
@@ -71,41 +70,41 @@ class Persoon(Derde):
     
     def __init__(self,
                  naam           :   str,
-                 groep          :   str     =   "ongegroepeerd",
-                 rekeningnummer :   list    =   None,
-                 iban           :   list    =   None,
-                 giro           :   list    =   None,
+                 groep          :   str         =   "ongegroepeerd",
+                 rekeningnummer :   List[str]   =   None,
+                 iban           :   List[str]   =   None,
+                 giro           :   List[str]   =   None,
                 ):
                  
         super().__init__(naam           =   naam,
                          type           =   "persoon",
                          iban           =   iban,
                          rekeningnummer =   rekeningnummer,
-                         giro           =   giro,
                          )
         
         self.groep              =   groep
+        self.giro               =   list() if giro is None else giro
 
 class Bedrijf(Derde):
 
     def __init__(self,
                  naam           :   str,
-                 synoniemen     :   list    =   None,
-                 uitsluiten     :   bool    =   False,
-                 rekeningnummer :   list    =   None,
-                 iban           :   list    =   None,
-                 giro           :   list    =   None,
-                 cat_uuid       :   str     =   None,
+                 synoniemen     :   list        =   None,
+                 uitsluiten     :   bool        =   False,
+                 rekeningnummer :   List[str]   =   None,
+                 iban           :   List[str]   =   None,
+                 giro           :   List[str]   =   None,
+                 cat_uuid       :   str         =   None,
                  ):
         
         super().__init__(naam           =   naam,
                          type           =   "bedrijf",
                          iban           =   iban,
                          rekeningnummer =   rekeningnummer,
-                         giro           =   giro,
                          )
         
         self.synoniemen     =   list() if synoniemen is None else synoniemen
+        self.giro               =   list() if giro is None else giro
         self.uitsluiten     =   uitsluiten
         self.cat_uuid       =   cat_uuid
 
@@ -113,19 +112,36 @@ class CPSP(Derde):
 
     def __init__(self,
                  naam           :   str,
-                 synoniemen     :   list    =   None,
-                 uitsluiten     :   bool    =   False,
-                 rekeningnummer :   list    =   None,
-                 iban           :   list    =   None,
-                 giro           :   list    =   None,
+                 synoniemen     :   List[str]   =   None,
+                 uitsluiten     :   bool        =   False,
+                 rekeningnummer :   List[str]   =   None,
+                 iban           :   List[str]   =   None,
                  ):
         
         super().__init__(naam           =   naam,
                          type           =   "cpsp",
                          iban           =   iban,
                          rekeningnummer =   rekeningnummer,
-                         giro           =   giro,
                          )
         
         self.synoniemen     =   list() if synoniemen is None else synoniemen
         self.uitsluiten     =   uitsluiten
+
+class Bank(Derde):
+
+    def __init__(self,
+                 naam           :   str,
+                 synoniemen     :   List[str]   =   None,
+                 rekeningnummer :   List[str]   =   None,
+                 iban           :   List[str]   =   None,
+                 bic            :   List[str]   =   None,
+                 ):
+        
+        super().__init__(naam           =   naam,
+                         type           =   "bank",
+                         iban           =   iban,
+                         rekeningnummer =   rekeningnummer,
+                         )
+        
+        self.synoniemen     =   list() if synoniemen is None else synoniemen
+        self.bic            =   list() if bic is None else bic

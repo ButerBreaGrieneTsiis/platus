@@ -5,7 +5,7 @@ import datetime as dt
 
 def verwerken():
     
-    eigen_bankrekeningen    =   open_json("gegevens\\config",    "bankrekeningen", "json")
+    eigen_bankrekeningen    =   open_json("gegevens\\config", "bankrekening", "json")
     bankrekening_uuid       =   invoer_kiezen("bankrekening", {eigen_bankrekening["naam"]: bankrekening_uuid  for bankrekening_uuid, eigen_bankrekening in eigen_bankrekeningen.items()})
     
     bankrekening    =   Bankrekening.openen(bankrekening_uuid)
