@@ -620,14 +620,31 @@ class Transactie:
                     continue
             
             elif opdracht.get("opdracht") == "velden":
-                print(f"\n\t{'INDEX':<6}{'VELD':<26}WAARDE")
+                print(f"\n\t{'INDEX':<6}{'VELD':<35}WAARDE")
                 for iveld, (veld, waarde) in enumerate(self.__dict__.items()):
                     if isinstance(waarde, dict):
-                        print(f"\t{iveld:<6}{veld:<26}")
+                        print(f"\t{iveld:<6}{veld:<35}")
                         for subveld, subwaarde in waarde.items():
-                            print(f"\t       -> {subveld:<22}{subwaarde}")
+                            if isinstance(subwaarde, dict):
+                                categorieen     =   open_json("gegevens\\config", "categorie", "json", clss = "categorie")
+                                print(f"\t       -> {subveld:<31}")
+                                for cat_uuid, bedrag in subwaarde.items():
+                                    categorie   =   categorieen[cat_uuid]
+                                    print(f"\t           -> {categorie.naam:<27}{bedrag}")
+                            else:
+                                print(f"\t       -> {subveld:<31}{subwaarde}")
+                                if subveld == "cpsp_uuid":
+                                    print(f"\t           -> {'medium':<27}{self.medium.naam}")
+                                elif subveld == "bank_uuid":
+                                    print(f"\t           -> {'bank':<27}{self.bank.naam}")
                     else:
-                        print(f"\t{iveld:<6}{veld:<26}{waarde}")
+                        print(f"\t{iveld:<6}{veld:<35}{waarde}")
+                        if veld == "cat_uuid":
+                            print(f"\t       -> {'hoofdcategorie':<31}{self.hoofdcategorie.naam}")
+                            print(f"\t       -> {'categorie':<31}{self.categorie.naam}")
+                        elif veld == "derde_uuid":
+                            print(f"\t       -> {'derde':<31}{self.derde.naam}")
+                            
                 print("")
                 continue
             
