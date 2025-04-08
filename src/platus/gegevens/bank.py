@@ -814,7 +814,7 @@ class Transactie:
             
             bedrijven       =   open_json("gegevens\\derden", "bedrijf", "json", clss = "bedrijf")
             if self.derde_uuid in bedrijven.keys():
-                if not bedrijven[self.derde_uuid].uitsluiten:
+                if not bedrijven[self.derde_uuid].uitsluiten and bedrijven[self.derde_uuid].cat_uuid is None:
                     print(f"toevoegen categorie \"{self.categorie.naam} ({self.hoofdcategorie.naam})\" aan bedrijf \"{bedrijven[self.derde_uuid].naam}\"?")
                     toevoegen   =   invoer_kiezen("toevoegen aan derde", ["ja", "nee", "uitsluiten"])
                     if toevoegen == "ja":
