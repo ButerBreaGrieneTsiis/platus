@@ -1,4 +1,5 @@
-from .invoer import invoer_kiezen, verwerken
+from .gegevens.invoer import invoer_kiezen
+from .gegevens.kern import verwerken
 
 def uitvoeren():
     
