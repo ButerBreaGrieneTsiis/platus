@@ -104,7 +104,7 @@ class Bedrijf(Derde):
                          )
         
         self.synoniemen     =   list() if synoniemen is None else synoniemen
-        self.giro               =   list() if giro is None else giro
+        self.giro           =   list() if giro is None else giro
         self.uitsluiten     =   uitsluiten
         self.cat_uuid       =   cat_uuid
 

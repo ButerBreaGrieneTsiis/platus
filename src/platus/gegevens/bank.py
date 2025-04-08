@@ -735,6 +735,9 @@ class Transactie:
                             bedrijven[uuid].synoniemen.append(self.tijdelijk.get("naam").casefold())
                         if "derde_iban" in self.tijdelijk.keys():
                             bedrijven[uuid].iban.append(self.tijdelijk.get("derde_iban"))
+                        if bedrijven[uuid].cat_uuid is not None:
+                            self.cat_uuid = bedrijven[uuid].cat_uuid
+                            print(f"categorie veranderd naar \"{self.categorie.naam} ({self.hoofdcategorie.naam})\"")
                         opslaan_json(bedrijven, "gegevens\\derden", "bedrijf", "json")
                         break
                         
