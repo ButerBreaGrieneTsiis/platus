@@ -1,4 +1,4 @@
-from platus import invoer_kiezen, verwerken
+from .invoer import invoer_kiezen, verwerken
 
 def uitvoeren():
     
