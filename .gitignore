@@ -3,3 +3,4 @@
 .gitignore
 **/__pycache__
 *.egg-info
+**/changelog
