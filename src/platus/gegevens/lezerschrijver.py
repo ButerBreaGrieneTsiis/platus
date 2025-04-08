@@ -7,18 +7,18 @@ def decoder(dictionary, **kwargs):
     from .bank import Transactie
     
     mapping     =   {
-                        "transactie": (frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "rekeningnummer", "uuid", "details", "derde_uuid")), Transactie.van_json),
-                        "categorie" : (frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden")), Categorie.van_json),
-                        "hoofdcategorie" : (frozenset(("naam",)), HoofdCategorie.van_json),
-                        "persoon": (frozenset(("naam", "iban", "rekeningnummer", "giro", "groep")), Persoon.van_json),
-                        "bedrijf": (frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid")), Bedrijf.van_json),
-                        "cpsp": (frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten")), CPSP.van_json),
-                        "bank": (frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic")), Bank.van_json),
+                        "transactie":       (Transactie.van_json,       frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "rekeningnummer", "uuid", "details", "derde_uuid",))),
+                        "categorie" :       (Categorie.van_json,        frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",))),
+                        "hoofdcategorie" :  (HoofdCategorie.van_json,   frozenset(("naam",))),
+                        "persoon":          (Persoon.van_json,          frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",))),
+                        "bedrijf":          (Bedrijf.van_json,          frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",))),
+                        "cpsp":             (CPSP.van_json,             frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",))),
+                        "bank":             (Bank.van_json,             frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",))),
                         }
     
     if "clss" in kwargs.keys():
-        if mapping[kwargs["clss"]][0].issuperset(dictionary.keys()):
-            return mapping[kwargs["clss"]][1](**dictionary)
+        if mapping[kwargs["clss"]][1].issuperset(dictionary.keys()):
+            return mapping[kwargs["clss"]][0](**dictionary)
         else:
             return dictionary
     else:
