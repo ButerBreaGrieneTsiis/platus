@@ -16,12 +16,12 @@ class Categorie:
     
     def __init__(self,
                  naam           :   str,
-                 hoofdcategorie :   str,
+                 hoofdcat_uuid  :   str,
                  trefwoorden    :   list  =   None,
                 ):
         
         self.naam           =   naam
-        self.hoofdcategorie =   hoofdcategorie
+        self.hoofdcat_uuid  =   hoofdcat_uuid
         self.trefwoorden    =   list() if trefwoorden is None else trefwoorden
     
     @classmethod
