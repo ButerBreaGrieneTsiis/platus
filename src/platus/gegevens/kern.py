@@ -1,8 +1,8 @@
-from grienetsiis import open_json
-
-from .invoer import invoer_kiezen, invoer_validatie
-from .bank import Bankrekening
 import datetime as dt
+
+from grienetsiis import open_json, invoer_kiezen, invoer_validatie
+from .bank import Bankrekening
+
 
 def verwerken():
     
