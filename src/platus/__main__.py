@@ -1,4 +1,4 @@
-from .gegevens.invoer import invoer_kiezen
+from grienetsiis import invoer_kiezen
 from .gegevens.kern import verwerken
 
 def uitvoeren():

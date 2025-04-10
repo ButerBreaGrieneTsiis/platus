@@ -5,10 +5,8 @@ from uuid import uuid4
 
 import pandas
 
-from grienetsiis import open_json, opslaan_json
-
+from grienetsiis import open_json, opslaan_json, invoer_validatie, invoer_kiezen
 from .utils import iban_zoeker
-from .invoer import invoer_validatie, invoer_kiezen
 from .derden import Persoon, Bedrijf, Derde, Bank, CPSP
 from .categorie import Categorie, HoofdCategorie
 
