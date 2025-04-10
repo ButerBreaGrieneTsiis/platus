@@ -27,3 +27,17 @@ class Categorie:
     @classmethod
     def van_json(cls, **categorie_dict: dict):
         return cls(**categorie_dict)
+    
+    def naar_json(self) -> dict:
+        
+        if len(self.trefwoorden) == 0:
+            return {
+                    "naam":             self.naam,
+                    "hoofdcat_uuid":    self.hoofdcat_uuid,
+                    }
+        else:
+            return {
+                    "naam":             self.naam,
+                    "hoofdcat_uuid":    self.hoofdcat_uuid,
+                    "trefwoorden":      self.trefwoorden,
+                    } 
