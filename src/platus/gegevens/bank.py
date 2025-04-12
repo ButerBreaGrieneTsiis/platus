@@ -15,19 +15,20 @@ locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
 
 class Transactie:
     
-    def __init__(self,
-                 bedrag             : int,
-                 beginsaldo         : int,
-                 eindsaldo          : int,
-                 transactiemethode  : str,
-                 datumtijd          : dt.datetime,
-                 cat_uuid           : str,
-                 derde_uuid         : str,
-                 index              : int   =   0,
-                 dagindex           : int   =   0,
-                 details            : dict  =   None,
-                 tijdelijk          : dict  =   None,
-                 ):
+    def __init__(
+            self,
+            bedrag             : int,
+            beginsaldo         : int,
+            eindsaldo          : int,
+            transactiemethode  : str,
+            datumtijd          : dt.datetime,
+            cat_uuid           : str,
+            derde_uuid         : str,
+            index              : int   =   0,
+            dagindex           : int   =   0,
+            details            : dict  =   None,
+            tijdelijk          : dict  =   None,
+        ):
         
         assert eindsaldo == beginsaldo + bedrag
         
@@ -1063,7 +1064,6 @@ class Transactie:
         return None
 
 class Bankrekening: 
-    
     
     def __init__(
         self,
