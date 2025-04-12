@@ -1,5 +1,5 @@
 from grienetsiis import invoer_kiezen
-from .gegevens.kern import verwerken
+from .gegevens.gegevens import verwerken_maand
 
 def uitvoeren():
     
@@ -10,7 +10,9 @@ def uitvoeren():
         if opdracht == "stop":
             break
         elif opdracht == "gegevens":
-            verwerken()
+            verwerken_maand()
+        else:
+            raise NotImplementedError
 
 if __name__ == "__main__":
     uitvoeren()

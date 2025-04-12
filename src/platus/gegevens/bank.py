@@ -7,9 +7,10 @@ from typing import Dict, Tuple, List
 import pandas as pd
 
 from grienetsiis import open_json, opslaan_json, invoer_validatie, invoer_kiezen
-from .utils import iban_zoeker
+from .gereedschap import iban_zoeker
 from .derden import Persoon, Bedrijf, Derde, Bank, CPSP
 from .categorie import Categorie, HoofdCategorie
+
 
 locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
 
@@ -1120,7 +1121,7 @@ class Bankrekening:
     def opslaan(self):
         opslaan_json(self.transacties, "gegevens\\rekeningen", self.uuid, "json", {"Transactie": "naar_json"})
     
-    def verwerken(
+    def verwerken_maand(
         self,
         jaar : int,
         maand : int,
