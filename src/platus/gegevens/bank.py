@@ -1052,9 +1052,6 @@ class Bankrekening:
                              transactie : Transactie,
                              ):
         
-        if not transactie.rekeningnummer == self.rekeningnummer:
-            raise ValueError(f"rekeningnummer transactie {transactie.rekeningnummer} niet gelijk aan rekeningnummer bankrekening {self.rekeningnummer}")
-        
         if not transactie.beginsaldo == self.transactie_lijst[-1].eindsaldo:
             raise ValueError(f"beginsaldo {transactie.beginsaldo} moet gelijk zijn aan eindsaldo laatste transactie {self.transactie_lijst[-1].eindsaldo}")
         
@@ -1074,7 +1071,3 @@ class Bankrekening:
         
         self.transacties[uuid]  =   transactie
         return self
-
-class Schuld:
-    
-        
