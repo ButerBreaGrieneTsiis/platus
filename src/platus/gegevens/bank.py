@@ -22,7 +22,6 @@ class Transactie:
                  datumtijd          : dt.datetime,
                  cat_uuid           : str,
                  derde_uuid         : str,
-                 rekeningnummer     : str,
                  index              : int   =   0,
                  dagindex           : int   =   0,
                  details            : dict  =   None,
@@ -40,7 +39,6 @@ class Transactie:
         self.dagindex           =   dagindex
         self.cat_uuid           =   cat_uuid
         self.derde_uuid         =   derde_uuid
-        self.rekeningnummer     =   rekeningnummer
         self.details            =   dict() if details is None else details
         self.tijdelijk          =   dict() if tijdelijk is None else tijdelijk
     
@@ -132,7 +130,6 @@ class Transactie:
                     dagindex            =   transactie_dict["dagindex"],
                     cat_uuid            =   transactie_dict["cat_uuid"],
                     derde_uuid          =   transactie_dict["derde_uuid"],
-                    rekeningnummer      =   transactie_dict["rekeningnummer"],
                     details             =   transactie_dict["details"] if "details" in transactie_dict.keys() else None,
                     )
     
@@ -154,7 +151,6 @@ class Transactie:
                     "dagindex":             self.dagindex,
                     "cat_uuid":             self.cat_uuid,
                     "derde_uuid":           self.derde_uuid,
-                    "rekeningnummer":       self.rekeningnummer,
                     }
         else:
             return {
@@ -167,7 +163,6 @@ class Transactie:
                     "dagindex":             self.dagindex,
                     "cat_uuid":             self.cat_uuid,
                     "derde_uuid":           self.derde_uuid,
-                    "rekeningnummer":       self.rekeningnummer,
                     "details":              self.details,
                     }
     
@@ -189,8 +184,6 @@ class Transactie:
     
     @classmethod
     def van_bankexport(cls, rij):
-        
-        rekeningnummer  =   str(rij.rekeningnummer)
         
         if rij.muntsoort.casefold() != "eur":
             raise NotImplementedError
@@ -420,7 +413,6 @@ class Transactie:
                    datumtijd            =   datumtijd,
                    cat_uuid             =   cat_uuid,
                    derde_uuid           =   derde_uuid,
-                   rekeningnummer       =   rekeningnummer,
                    details              =   details,
                    tijdelijk            =   tijdelijk,
                    )
@@ -1020,7 +1012,7 @@ class Bankrekening:
             bankrekening_dict["actief_tot"]         =   dt.datetime.strptime(eigen_bankrekeningen[bankrekening_uuid]["actief tot"], "%Y-%m-%d")
             bankrekening_dict["actief"]             =   False
         
-        bankrekening_dict["transacties"]            =   open_json("gegevens\\bankrekeningen", bankrekening_uuid, "json", class_mapper = (Transactie, frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "rekeningnummer", "uuid", "details", "derde_uuid",)), "van_json"),)
+        bankrekening_dict["transacties"]            =   open_json("gegevens\\bankrekeningen", bankrekening_uuid, "json", class_mapper = (Transactie, frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "uuid", "details", "derde_uuid",)), "van_json"),)
         
         return cls(**bankrekening_dict)
     
@@ -1082,3 +1074,7 @@ class Bankrekening:
         
         self.transacties[uuid]  =   transactie
         return self
+
+class Schuld:
+    
+        
