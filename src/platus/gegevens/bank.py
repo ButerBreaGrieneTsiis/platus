@@ -15,21 +15,19 @@ locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
 
 class Transactie:
     
-    def __init__(
-            self,
-            bedrag             : int,
-            beginsaldo         : int,
-            eindsaldo          : int,
-            transactiemethode  : str,
-            datumtijd          : dt.datetime,
-            cat_uuid           : str,
-            derde_uuid         : str,
-            rekeningnummer     : str,
-            index              : int   =   0,
-            dagindex           : int   =   0,
-            details            : dict  =   None,
-            tijdelijk          : dict  =   None,
-    ):
+    def __init__(self,
+                 bedrag             : int,
+                 beginsaldo         : int,
+                 eindsaldo          : int,
+                 transactiemethode  : str,
+                 datumtijd          : dt.datetime,
+                 cat_uuid           : str,
+                 derde_uuid         : str,
+                 index              : int   =   0,
+                 dagindex           : int   =   0,
+                 details            : dict  =   None,
+                 tijdelijk          : dict  =   None,
+                 ):
         
         assert eindsaldo == beginsaldo + bedrag
         
@@ -42,7 +40,6 @@ class Transactie:
         self.dagindex           =   dagindex
         self.cat_uuid           =   cat_uuid
         self.derde_uuid         =   derde_uuid
-        self.rekeningnummer     =   rekeningnummer
         self.details            =   dict() if details is None else details
         self.tijdelijk          =   dict() if tijdelijk is None else tijdelijk
     
@@ -128,18 +125,17 @@ class Transactie:
             datumtijd   =   dt.datetime.strptime(transactie_dict["datumtijd"], "%Y-%m-%dT%H:%M")
         
         return cls(
-            index               =   transactie_dict["index"],
-            bedrag              =   transactie_dict["bedrag"],
-            beginsaldo          =   transactie_dict["beginsaldo"],
-            eindsaldo           =   transactie_dict["eindsaldo"],
-            transactiemethode   =   transactie_dict["transactiemethode"],
-            datumtijd           =   datumtijd,
-            dagindex            =   transactie_dict["dagindex"],
-            cat_uuid            =   transactie_dict["cat_uuid"],
-            derde_uuid          =   transactie_dict["derde_uuid"],
-            rekeningnummer      =   transactie_dict["rekeningnummer"],
-            details             =   transactie_dict["details"] if "details" in transactie_dict.keys() else None,
-        )
+                    index               =   transactie_dict["index"],
+                    bedrag              =   transactie_dict["bedrag"],
+                    beginsaldo          =   transactie_dict["beginsaldo"],
+                    eindsaldo           =   transactie_dict["eindsaldo"],
+                    transactiemethode   =   transactie_dict["transactiemethode"],
+                    datumtijd           =   datumtijd,
+                    dagindex            =   transactie_dict["dagindex"],
+                    cat_uuid            =   transactie_dict["cat_uuid"],
+                    derde_uuid          =   transactie_dict["derde_uuid"],
+                    details             =   transactie_dict["details"] if "details" in transactie_dict.keys() else None,
+                    )
     
     def naar_json(self):
         
@@ -150,32 +146,29 @@ class Transactie:
         
         if self.details == {}:
             return {
-                "index":                self.index,
-                "bedrag":               self.bedrag,
-                "beginsaldo":           self.beginsaldo,
-                "eindsaldo":            self.eindsaldo,
-                "transactiemethode":    self.transactiemethode,
-                "datumtijd":            datumtijd,
-                "dagindex":             self.dagindex,
-                "cat_uuid":             self.cat_uuid,
-                "derde_uuid":           self.derde_uuid,
-                "rekeningnummer":       self.rekeningnummer,
-            }
-        
+                    "index":                self.index,
+                    "bedrag":               self.bedrag,
+                    "beginsaldo":           self.beginsaldo,
+                    "eindsaldo":            self.eindsaldo,
+                    "transactiemethode":    self.transactiemethode,
+                    "datumtijd":            datumtijd,
+                    "dagindex":             self.dagindex,
+                    "cat_uuid":             self.cat_uuid,
+                    "derde_uuid":           self.derde_uuid,
+                    }
         else:
             return {
-                "index":                self.index,
-                "bedrag":               self.bedrag,
-                "beginsaldo":           self.beginsaldo,
-                "eindsaldo":            self.eindsaldo,
-                "transactiemethode":    self.transactiemethode,
-                "datumtijd":            datumtijd,
-                "dagindex":             self.dagindex,
-                "cat_uuid":             self.cat_uuid,
-                "derde_uuid":           self.derde_uuid,
-                "rekeningnummer":       self.rekeningnummer,
-                "details":              self.details,
-            }
+                    "index":                self.index,
+                    "bedrag":               self.bedrag,
+                    "beginsaldo":           self.beginsaldo,
+                    "eindsaldo":            self.eindsaldo,
+                    "transactiemethode":    self.transactiemethode,
+                    "datumtijd":            datumtijd,
+                    "dagindex":             self.dagindex,
+                    "cat_uuid":             self.cat_uuid,
+                    "derde_uuid":           self.derde_uuid,
+                    "details":              self.details,
+                    }
     
     def naar_tabel(
             self,
@@ -488,7 +481,6 @@ class Transactie:
                    datumtijd            =   datumtijd,
                    cat_uuid             =   cat_uuid,
                    derde_uuid           =   derde_uuid,
-                   rekeningnummer       =   rekeningnummer,
                    details              =   details,
                    tijdelijk            =   tijdelijk,
                    )
@@ -1121,7 +1113,7 @@ class Bankrekening:
             bankrekening_dict["actief_tot"]         =   dt.datetime.strptime(eigen_bankrekeningen[bankrekening_uuid]["actief tot"], "%Y-%m-%d")
             bankrekening_dict["actief"]             =   False
         
-        bankrekening_dict["transacties"]            =   open_json("gegevens\\bankrekeningen", bankrekening_uuid, "json", class_mapper = (Transactie, frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "rekeningnummer", "uuid", "details", "derde_uuid",)), "van_json"),)
+        bankrekening_dict["transacties"]            =   open_json("gegevens\\bankrekeningen", bankrekening_uuid, "json", class_mapper = (Transactie, frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "uuid", "details", "derde_uuid",)), "van_json"),)
         
         return cls(**bankrekening_dict)
     
@@ -1188,9 +1180,6 @@ class Bankrekening:
             self,
             transactie : Transactie,
             ):
-        
-        if not transactie.rekeningnummer == self.rekeningnummer:
-            raise ValueError(f"rekeningnummer transactie {transactie.rekeningnummer} niet gelijk aan rekeningnummer bankrekening {self.rekeningnummer}")
         
         if not transactie.beginsaldo == self.transactie_lijst[-1].eindsaldo:
             raise ValueError(f"beginsaldo {transactie.beginsaldo} moet gelijk zijn aan eindsaldo laatste transactie {self.transactie_lijst[-1].eindsaldo}")
