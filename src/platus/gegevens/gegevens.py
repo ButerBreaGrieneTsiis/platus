@@ -1,7 +1,7 @@
 import datetime as dt
 
 from grienetsiis import open_json, invoer_kiezen, invoer_validatie
-from .bank import Bankrekening
+from .rekening import Bankrekening
 
 
 def verwerken_maand():

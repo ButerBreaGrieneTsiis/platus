@@ -2,7 +2,7 @@ import locale
 import re
 import datetime as dt
 from uuid import uuid4
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Any
 
 import pandas as pd
 
@@ -54,7 +54,7 @@ class Transactie:
         derde   =   self.derde()
         
         if self.transactiemethode == "pinbetaling" or self.transactiemethode == "geldopname":
-            lijn_derde  =   f"aan \"{derde().naam}\" per {self.transactiemethode} in {self.details["locatie"]} ({self.details["land"]})"
+            lijn_derde  =   f"aan \"{derde.naam}\" per {self.transactiemethode} in {self.details["locatie"]} ({self.details["land"]})"
         elif self.transactiemethode == "bankkosten" or self.transactiemethode == "rente":
             lijn_derde  =   f"voor {self.transactiemethode}"
         else:
@@ -174,23 +174,23 @@ class Transactie:
     
     def naar_tabel(
             self,
-            tabel_type      :   str = "algemeen",
+            tabel_type      :   str                         =   "algemeen",
             personen        :   Dict[str, Persoon]          =   None,
             bedrijven       :   Dict[str, Bedrijf]          =   None,
-            bankrekeningen  :   Dict                        =   None,
+            bankrekeningen  :   Dict[str, Any]              =   None,
             banken          :   Dict[str, Bank]             =   None,
             cpsps           :   Dict[str, CPSP]             =   None,
             categorieen     :   Dict[str, Categorie]        =   None,
             hoofdcategorieen:   Dict[str, HoofdCategorie]   =   None,
             ) -> dict:
         
-        personen            =   personen            if personen         is not None else open_json("gegevens\\derden", "persoon",      "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
-        bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden", "bedrijf",      "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
-        bankrekeningen      =   bankrekeningen      if bankrekeningen   is not None else open_json("gegevens\\configuratie", "bankrekening", "json")
-        banken              =   banken              if banken           is not None else open_json("gegevens\\derden", "bank",         "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
-        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden", "cpsp",         "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
-        categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie", "categorie", "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
-        hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie", "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
+        personen            =   personen            if personen         is not None else open_json("gegevens\\derden",          "persoon",          "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
+        bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden",          "bedrijf",          "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
+        bankrekeningen      =   bankrekeningen      if bankrekeningen   is not None else open_json("gegevens\\configuratie",    "bankrekening",     "json")
+        banken              =   banken              if banken           is not None else open_json("gegevens\\derden",          "bank",             "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
+        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",             "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+        categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie",    "categorie",        "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
+        hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie",    "hoofdcategorie",   "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
         
         derde   =   self.derde(
                         personen,
@@ -209,16 +209,13 @@ class Transactie:
                     "transactiemethode":    self.transactiemethode,
                     "datumtijd":            self.datumtijd,
                     "dagindex":             self.dagindex,
-                    "hoofdcategorie":       self.hoofdcategorie(
-                        categorieen,
-                        hoofdcategorieen,
-                    ).naam,
+                    "hoofdcategorie":       self.hoofdcategorie(categorieen, hoofdcategorieen).naam,
                     "categorie":            self.categorie(categorieen).naam,
-                    "derde":                derde["naam"] if isinstance(derde, dict) else derde.naam,
+                    "derde":                derde["naam"]  if isinstance(derde, dict) else derde.naam,
                     "type":                 "bankrekening" if isinstance(derde, dict) else derde.type,
                     }
         
-        elif tabel_type == "pinbetaling":
+        elif tabel_type == "pinpas":
             if self.transactiemethode == "pinbetaling" or self.transactiemethode == "geldopname":
                 return {
                     "index":                self.index,
@@ -228,18 +225,15 @@ class Transactie:
                     "transactiemethode":    self.transactiemethode,
                     "datumtijd":            self.datumtijd,
                     "dagindex":             self.dagindex,
-                    "hoofdcategorie":       self.hoofdcategorie(
-                        categorieen,
-                        hoofdcategorieen,
-                    ).naam,
+                    "hoofdcategorie":       self.hoofdcategorie(categorieen, hoofdcategorieen).naam,
                     "categorie":            self.categorie(categorieen).naam,
-                    "derde":                derde["naam"] if isinstance(derde, dict) else derde.naam,
+                    "derde":                derde["naam"]  if isinstance(derde, dict) else derde.naam,
                     "type":                 "bankrekening" if isinstance(derde, dict) else derde.type,
                     "locatie":              self.details["locatie"],
                     "land":                 self.details["land"],
                     "pasnummer":            self.details["pasnummer"],
                     }
-       
+    
     @classmethod
     def van_bankexport(
         cls, 
@@ -1025,16 +1019,16 @@ class Transactie:
         self,
         personen        :   Dict[str, Persoon]          =   None,
         bedrijven       :   Dict[str, Bedrijf]          =   None,
-        bankrekeningen  :   Dict                        =   None,
+        bankrekeningen  :   Dict[str, Any]              =   None,
         banken          :   Dict[str, Bank]             =   None,
         cpsps           :   Dict[str, CPSP]             =   None,
     ) -> Persoon | Bedrijf | Bank | CPSP:
         
-        personen            =   personen            if personen         is not None else open_json("gegevens\\derden", "persoon",      "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
-        bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden", "bedrijf",      "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
-        bankrekeningen      =   bankrekeningen      if bankrekeningen   is not None else open_json("gegevens\\configuratie", "bankrekening", "json")
-        banken              =   banken              if banken           is not None else open_json("gegevens\\derden", "bank",         "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
-        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden", "cpsp",         "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+        personen            =   personen            if personen         is not None else open_json("gegevens\\derden",          "persoon",      "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
+        bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden",          "bedrijf",      "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
+        bankrekeningen      =   bankrekeningen      if bankrekeningen   is not None else open_json("gegevens\\configuratie",    "bankrekening", "json")
+        banken              =   banken              if banken           is not None else open_json("gegevens\\derden",          "bank",         "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
+        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",         "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         
         if self.derde_uuid is None:
             return bedrijven["f2892946-cc42-4d6f-8360-9b0d28249cd0"]
@@ -1064,7 +1058,80 @@ class Transactie:
             return banken[self.details.get("bank_uuid")]
         return None
 
-class Bankrekening: 
+class Rekening:
+    
+    def __init__(
+        self,
+        naam                :   str,
+        uuid                :   str,
+        actief_van          :   dt.datetime, 
+        transacties         :   dict                =   None,
+        actief              :   bool                =   True,
+        actief_tot          :   dt.datetime         =   None,
+    ) -> "Rekening":
+        
+        self.naam               =   naam
+        self.uuid               =   uuid
+        self.transacties        =   dict() if transacties is None else transacties
+        self.actief             =   actief
+        self.actief_van         =   actief_van
+        self.actief_tot         =   actief_tot
+    
+    def opslaan(self):
+        opslaan_json(self.transacties, "gegevens\\rekeningen", self.uuid, "json", {"Transactie": "naar_json"})
+    
+    @property
+    def transactie_lijst(self) -> List[Transactie]:
+        return list(sorted(self.transacties.values(), key = lambda transactie: transactie.index))
+    
+    def saldo_op_datum(
+        self,
+        datum: dt.date,
+    ) -> int:
+        
+        return next((transactie.eindsaldo for transactie in self.transactie_lijst if transactie.datumtijd >= datum), self.transactie_lijst[-1].eindsaldo) / 100
+    
+    def saldo(
+        self,
+        datum_vanaf :   dt.datetime.date    =   None,
+        datum_tot   :   dt.datetime.date    =   None,
+        ) -> pd.DataFrame:
+        
+        datum_vanaf     =   self.actief_van             if datum_vanaf is None else datum_vanaf
+        datum_tot       =   (dt.datetime.now().date() if self.actief else self.actief_tot + dt.timedelta(days = 1)) if datum_tot is None else datum_tot
+        
+        datum_lijst     =   list(pd.date_range(datum_vanaf, datum_tot, freq = "d"))
+        saldo_lijst     =   [self.saldo_op_datum(datum) for datum in datum_lijst]
+        datum_lijst.insert(0, datum_lijst[0])
+        saldo_lijst.insert(0, 0)
+        
+        return pd.DataFrame({"datumtijd": datum_lijst, "saldo": saldo_lijst})
+    
+    def tabel(
+        self,
+        tabel_type : str = "algemeen",
+        ) -> pd.DataFrame:
+        
+        personen        = 	open_json("gegevens\\derden",           "persoon",        "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
+        bedrijven       = 	open_json("gegevens\\derden",           "bedrijf",        "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
+        bankrekeningen  = 	open_json("gegevens\\configuratie",     "bankrekening",   "json")
+        banken          = 	open_json("gegevens\\derden",           "bank",           "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
+        cpsps           = 	open_json("gegevens\\derden",           "cpsp",           "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+        categorieen     =   open_json("gegevens\\configuratie",     "categorie",      "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
+        hoofdcategorieen=   open_json("gegevens\\configuratie",     "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
+        
+        return pd.DataFrame([transactie_rij for transactie_rij in [transactie.naar_tabel(
+            tabel_type,
+            personen,
+            bedrijven,
+            bankrekeningen,
+            banken,
+            cpsps,
+            categorieen,
+            hoofdcategorieen,
+            ) for transactie in self.transactie_lijst] if transactie_rij is not None])
+
+class Bankrekening(Rekening): 
     
     def __init__(
         self,
@@ -1080,16 +1147,19 @@ class Bankrekening:
         actief_tot         :   dt.datetime =   None,
     ):
         
-        self.naam               =   naam
+        super().__init__(
+            naam            =   naam,
+            uuid            =   uuid,
+            actief_van      =   actief_van,
+            transacties     =   transacties,
+            actief          =   actief,
+            actief_tot      =   actief_tot,
+        )
+        
         self.bank_uuid          =   bank_uuid
         self.pad                =   pad
         self.rekeningnummer     =   rekeningnummer
-        self.uuid               =   uuid
         self.iban               =   iban
-        self.transacties        =   dict() if transacties is None else transacties
-        self.actief             =   actief
-        self.actief_van         =   actief_van
-        self.actief_tot         =   actief_tot
     
     @classmethod
     def openen(
@@ -1105,21 +1175,18 @@ class Bankrekening:
         bankrekening_dict["bank_uuid"]              =   eigen_bankrekeningen[bankrekening_uuid]["bank_uuid"]
         bankrekening_dict["pad"]                    =   eigen_bankrekeningen[bankrekening_uuid]["pad"]
         bankrekening_dict["uuid"]                   =   bankrekening_uuid
-        bankrekening_dict["actief_van"]             =   dt.datetime.strptime(eigen_bankrekeningen[bankrekening_uuid]["actief_van"], "%Y-%m-%d")
+        bankrekening_dict["actief_van"]             =   dt.datetime.strptime(eigen_bankrekeningen[bankrekening_uuid]["actief_van"], "%Y-%m-%d").date()
         if "rekeningnummer" in eigen_bankrekeningen[bankrekening_uuid].keys():
             bankrekening_dict["rekeningnummer"]     =   eigen_bankrekeningen[bankrekening_uuid]["rekeningnummer"]
         if "iban" in eigen_bankrekeningen[bankrekening_uuid].keys():
             bankrekening_dict["iban"]               =   eigen_bankrekeningen[bankrekening_uuid]["iban"]
         if "actief_tot" in eigen_bankrekeningen[bankrekening_uuid].keys():
-            bankrekening_dict["actief_tot"]         =   dt.datetime.strptime(eigen_bankrekeningen[bankrekening_uuid]["actief_tot"], "%Y-%m-%d")
+            bankrekening_dict["actief_tot"]         =   dt.datetime.strptime(eigen_bankrekeningen[bankrekening_uuid]["actief_tot"], "%Y-%m-%d").date()
             bankrekening_dict["actief"]             =   False
         
         bankrekening_dict["transacties"]            =   open_json("gegevens\\rekeningen", bankrekening_uuid, "json", class_mapper = (Transactie, frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "uuid", "details", "derde_uuid",)), "van_json"),)
         
         return cls(**bankrekening_dict)
-    
-    def opslaan(self):
-        opslaan_json(self.transacties, "gegevens\\rekeningen", self.uuid, "json", {"Transactie": "naar_json"})
     
     def verwerken_maand(
         self,
@@ -1139,47 +1206,9 @@ class Bankrekening:
             self.toevoegen_transactie(transactie)
     
     @property
-    def transactie_lijst(self) -> List[Transactie]:
-        return list(sorted(self.transacties.values(), key = lambda transactie: transactie.index))
-    
-    @property
     def bank(self) -> str:
         banken  =   open_json("gegevens\\derden", "bank", "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
         return banken[self.bank_uuid]
-    
-    @property
-    def saldo(self) -> int:
-        return self.transactie_lijst[-1].eindsaldo
-    
-    def saldo_op_datum(
-            self,
-            datumtijd: dt.datetime,
-    ) -> int:
-        ...
-    
-    def tabel(
-        self,
-        tabel_type : str = "algemeen",
-        ) -> pd.DataFrame:
-        
-        personen        = 	open_json("gegevens\\derden", "persoon",        "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
-        bedrijven       = 	open_json("gegevens\\derden", "bedrijf",        "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
-        bankrekeningen  = 	open_json("gegevens\\configuratie", "bankrekening",   "json")
-        banken          = 	open_json("gegevens\\derden", "bank",           "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
-        cpsps           = 	open_json("gegevens\\derden", "cpsp",           "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
-        categorieen     =   open_json("gegevens\\configuratie", "categorie",      "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
-        hoofdcategorieen=   open_json("gegevens\\configuratie", "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
-        
-        return pd.DataFrame([transactie_rij for transactie_rij in [transactie.naar_tabel(
-            tabel_type,
-            personen,
-            bedrijven,
-            bankrekeningen,
-            banken,
-            cpsps,
-            categorieen,
-            hoofdcategorieen,
-            ) for transactie in self.transactie_lijst] if transactie_rij is not None])
     
     def toevoegen_transactie(
             self,
@@ -1206,7 +1235,7 @@ class Bankrekening:
         self.transacties[uuid]  =   transactie
         return self
 
-class Lening:
+class Lening(Rekening):
     
     def __init__(
             self,
@@ -1220,13 +1249,16 @@ class Lening:
             rente               :   Dict[str, float]    =   None,
         ):
             
-            self.naam               =   naam
+            super().__init__(
+                naam            =   naam,
+                uuid            =   uuid,
+                actief_van      =   actief_van,
+                transacties     =   transacties,
+                actief          =   actief,
+                actief_tot      =   actief_tot,
+            )
+            
             self.schuldeiser_uuid   =   schuldeiser_uuid
-            self.uuid               =   uuid
-            self.transacties        =   dict() if transacties is None else transacties
-            self.actief             =   actief
-            self.actief_van         =   actief_van
-            self.actief_tot         =   actief_tot
             self.rente              =   rente
     
     @classmethod
@@ -1241,9 +1273,9 @@ class Lening:
         lening_dict["naam"]             =   leningen[lening_uuid]["naam"]
         lening_dict["schuldeiser_uuid"] =   leningen[lening_uuid]["schuldeiser_uuid"]
         lening_dict["uuid"]             =   lening_uuid
-        lening_dict["actief_van"]       =   dt.datetime.strptime(leningen[lening_uuid]["actief_van"], "%Y-%m-%d")
+        lening_dict["actief_van"]       =   dt.datetime.strptime(leningen[lening_uuid]["actief_van"], "%Y-%m-%d").date()
         if "actief_tot" in leningen[lening_uuid].keys():
-            lening_dict["actief_tot"]   =   dt.datetime.strptime(leningen[lening_uuid]["actief_tot"], "%Y-%m-%d")
+            lening_dict["actief_tot"]   =   dt.datetime.strptime(leningen[lening_uuid]["actief_tot"], "%Y-%m-%d").date()
             lening_dict["actief"]       =   False
         
         lening_dict["transacties"]      =   open_json("gegevens\\rekeningen", lening_uuid, "json", class_mapper = (Transactie, frozenset(("index", "bedrag", "beginsaldo", "eindsaldo", "transactiemethode", "datumtijd", "dagindex", "cat_uuid", "uuid", "details", "derde_uuid",)), "van_json"),)
