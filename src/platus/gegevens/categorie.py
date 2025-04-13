@@ -1,11 +1,13 @@
-from uuid import uuid4
 from typing import Dict, Any
+from uuid import uuid4
+
 
 class HoofdCategorie:
      
-    def __init__(self,
-                 naam       :   str,
-                 ):
+    def __init__(
+        self,
+        naam    :   str,
+    ) -> "HoofdCategorie":
         
         self.naam              =   naam
     

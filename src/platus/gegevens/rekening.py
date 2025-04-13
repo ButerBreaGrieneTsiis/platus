@@ -1,15 +1,15 @@
+import datetime as dt
 import locale
 import re
-import datetime as dt
-from uuid import uuid4
 from typing import Dict, Tuple, List, Any
+from uuid import uuid4
 
 import pandas as pd
 
 from grienetsiis import open_json, opslaan_json, invoer_validatie, invoer_kiezen
-from .gereedschap import iban_zoeker
-from .derden import Persoon, Bedrijf, Derde, Bank, CPSP
 from .categorie import Categorie, HoofdCategorie
+from .derden import Persoon, Bedrijf, Derde, Bank, Cpsp
+from .gereedschap import iban_zoeker
 
 
 locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
@@ -179,7 +179,7 @@ class Transactie:
             bedrijven       :   Dict[str, Bedrijf]          =   None,
             bankrekeningen  :   Dict[str, Any]              =   None,
             banken          :   Dict[str, Bank]             =   None,
-            cpsps           :   Dict[str, CPSP]             =   None,
+            cpsps           :   Dict[str, Cpsp]             =   None,
             categorieen     :   Dict[str, Categorie]        =   None,
             hoofdcategorieen:   Dict[str, HoofdCategorie]   =   None,
             ) -> dict:
@@ -188,7 +188,7 @@ class Transactie:
         bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden",          "bedrijf",          "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
         bankrekeningen      =   bankrekeningen      if bankrekeningen   is not None else open_json("gegevens\\configuratie",    "bankrekening",     "json")
         banken              =   banken              if banken           is not None else open_json("gegevens\\derden",          "bank",             "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
-        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",             "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",             "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie",    "categorie",        "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
         hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie",    "hoofdcategorie",   "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
         
@@ -527,13 +527,13 @@ class Transactie:
         iban: str,
     ) -> str | None:
         
-        cpsps   =   open_json("gegevens\\derden", "cpsp", "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+        cpsps   =   open_json("gegevens\\derden", "cpsp", "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         
         for cpsp_uuid, cpsp in cpsps.items():
             if cpsp.naam.casefold() in naam.casefold() or any([cpsp_synoniem.casefold() in naam.casefold() for cpsp_synoniem in cpsp.synoniemen]) or any([cpsp_iban == iban for cpsp_iban in cpsp.iban]):
                 if iban not in cpsp.iban:
                     cpsps[cpsp_uuid].iban.append(iban)
-                    opslaan_json(cpsps, "gegevens\\derden", "cpsp", "json", {"CPSP": "naar_json"})
+                    opslaan_json(cpsps, "gegevens\\derden", "cpsp", "json", {"Cpsp": "naar_json"})
                 return cpsp_uuid
         return None
     
@@ -897,7 +897,7 @@ class Transactie:
                 if zoekterm == "":
                     continue
                 
-                cpsps       =   open_json("gegevens\\derden", "cpsp", "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+                cpsps       =   open_json("gegevens\\derden", "cpsp", "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
                 cpsps_match_uuid    =   []
                 for cpsp_uuid, cpsp in cpsps.items():
                     if zoekterm.casefold() in cpsp.naam.casefold():
@@ -916,7 +916,7 @@ class Transactie:
                     cpsps[cpsp_uuid].synoniemen.append(self.tijdelijk.get("naam").casefold())
                 if "medium_iban" in self.tijdelijk.keys():
                     cpsps[cpsp_uuid].iban.append(self.tijdelijk.get("medium_iban"))
-                opslaan_json(cpsps, "gegevens\\derden", "cpsp", "json", {"CPSP": "naar_json"})
+                opslaan_json(cpsps, "gegevens\\derden", "cpsp", "json", {"Cpsp": "naar_json"})
                 break
         
         elif veld == "cat_uuid":
@@ -1021,14 +1021,14 @@ class Transactie:
         bedrijven       :   Dict[str, Bedrijf]          =   None,
         bankrekeningen  :   Dict[str, Any]              =   None,
         banken          :   Dict[str, Bank]             =   None,
-        cpsps           :   Dict[str, CPSP]             =   None,
-    ) -> Persoon | Bedrijf | Bank | CPSP:
+        cpsps           :   Dict[str, Cpsp]             =   None,
+    ) -> Persoon | Bedrijf | Bank | Cpsp:
         
         personen            =   personen            if personen         is not None else open_json("gegevens\\derden",          "persoon",      "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
         bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden",          "bedrijf",      "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
         bankrekeningen      =   bankrekeningen      if bankrekeningen   is not None else open_json("gegevens\\configuratie",    "bankrekening", "json")
         banken              =   banken              if banken           is not None else open_json("gegevens\\derden",          "bank",         "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
-        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",         "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+        cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",         "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         
         if self.derde_uuid is None:
             return bedrijven["f2892946-cc42-4d6f-8360-9b0d28249cd0"]
@@ -1044,10 +1044,10 @@ class Transactie:
             elif self.derde_uuid in cpsps.keys():
                 return cpsps.get(self.derde_uuid)
     
-    def medium(self) -> CPSP:
+    def medium(self) -> Cpsp:
         
         if "cpsp_uuid" in self.details.keys():
-            cpsps = open_json("gegevens\\derden", "cpsp", "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+            cpsps = open_json("gegevens\\derden", "cpsp", "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
             return cpsps[self.details.get("cpsp_uuid")]
         return None
     
@@ -1089,7 +1089,7 @@ class Rekening:
         datum: dt.date,
     ) -> int:
         
-        return next((transactie.eindsaldo for transactie in self.transactie_lijst if transactie.datumtijd >= datum), self.transactie_lijst[-1].eindsaldo) / 100
+        return next((transactie.eindsaldo for transactie in reversed(self.transactie_lijst) if transactie.datumtijd <= datum), 0) / 100
     
     def saldo(
         self,
@@ -1116,7 +1116,7 @@ class Rekening:
         bedrijven       = 	open_json("gegevens\\derden",           "bedrijf",        "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
         bankrekeningen  = 	open_json("gegevens\\configuratie",     "bankrekening",   "json")
         banken          = 	open_json("gegevens\\derden",           "bank",           "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
-        cpsps           = 	open_json("gegevens\\derden",           "cpsp",           "json", class_mapper = (CPSP, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
+        cpsps           = 	open_json("gegevens\\derden",           "cpsp",           "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         categorieen     =   open_json("gegevens\\configuratie",     "categorie",      "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
         hoofdcategorieen=   open_json("gegevens\\configuratie",     "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
         

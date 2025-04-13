@@ -1,5 +1,6 @@
-from uuid import uuid4
 from typing import List, Dict, Any
+from uuid import uuid4
+
 
 class Derde:
     
@@ -120,7 +121,7 @@ class Bedrijf(Derde):
         self.uitsluiten     =   uitsluiten
         self.cat_uuid       =   cat_uuid
 
-class CPSP(Derde):
+class Cpsp(Derde):
 
     def __init__(
         self,
@@ -129,7 +130,7 @@ class CPSP(Derde):
         uitsluiten     :   bool        =   False,
         rekeningnummer :   List[str]   =   None,
         iban           :   List[str]   =   None,
-    ):
+    ) -> "Cpsp":
         
         super().__init__(
             naam           =   naam,
@@ -150,7 +151,7 @@ class Bank(Derde):
         rekeningnummer :   List[str]   =   None,
         iban           :   List[str]   =   None,
         bic            :   List[str]   =   None,
-    ):
+    ) -> "Bank":
         
         super().__init__(
             naam           =   naam,
