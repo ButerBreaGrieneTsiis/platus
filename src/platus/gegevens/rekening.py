@@ -1102,7 +1102,7 @@ class Rekening:
         
         datum_lijst     =   list(pd.date_range(datum_vanaf, datum_tot, freq = "d"))
         saldo_lijst     =   [self.saldo_op_datum(datum) for datum in datum_lijst]
-        datum_lijst.insert(0, datum_lijst[0])
+        datum_lijst.insert(0, datum_lijst[0] - dt.timedelta(days = 1))
         saldo_lijst.insert(0, 0)
         
         return pd.DataFrame({"datumtijd": datum_lijst, "saldo": saldo_lijst})
