@@ -7,9 +7,11 @@ class HoofdCategorie:
     def __init__(
         self,
         naam    :   str,
+        type    :   str,
     ) -> "HoofdCategorie":
         
-        self.naam              =   naam
+        self.naam   =   naam
+        self.type   =   type
     
     @classmethod
     def van_json(

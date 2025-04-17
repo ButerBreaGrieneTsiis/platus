@@ -4,12 +4,14 @@ import re
 from typing import Dict, Tuple, List, Any
 from uuid import uuid4
 
+import numpy as np
 import pandas as pd
+import xarray as xr
 
 from grienetsiis import open_json, opslaan_json, invoer_validatie, invoer_kiezen
 from .categorie import Categorie, HoofdCategorie
 from .derden import Persoon, Bedrijf, Derde, Bank, Cpsp
-from .gereedschap import iban_zoeker
+from .gereedschap import iban_zoeker, jaar_maand_iterator
 
 
 locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
@@ -190,7 +192,7 @@ class Transactie:
         banken              =   banken              if banken           is not None else open_json("gegevens\\derden",          "bank",             "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
         cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",             "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie",    "categorie",        "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
-        hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie",    "hoofdcategorie",   "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
+        hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie",    "hoofdcategorie",   "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
         
         derde   =   self.derde(
                         personen,
@@ -922,7 +924,7 @@ class Transactie:
         elif veld == "cat_uuid":
             
             categorieen         =   open_json("gegevens\\configuratie", "categorie",      "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
-            hoofdcategorieen    =   open_json("gegevens\\configuratie", "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
+            hoofdcategorieen    =   open_json("gegevens\\configuratie", "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
             
             while True:
                 
@@ -1012,7 +1014,7 @@ class Transactie:
     ) -> HoofdCategorie:
         
         categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie", "categorie", "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
-        hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie", "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
+        hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie", "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
         return hoofdcategorieen.get(self.categorie(categorieen).hoofdcat_uuid)
     
     def derde(
@@ -1084,28 +1086,28 @@ class Rekening:
     def transactie_lijst(self) -> List[Transactie]:
         return list(sorted(self.transacties.values(), key = lambda transactie: transactie.index))
     
-    def saldo_op_datum(
-        self,
-        datum: dt.date,
-    ) -> int:
+    # def saldo_op_datum(
+    #     self,
+    #     datum: dt.date,
+    # ) -> int:
         
-        return next((transactie.eindsaldo for transactie in reversed(self.transactie_lijst) if transactie.datumtijd <= datum), 0) / 100
+    #     return next((transactie.eindsaldo for transactie in reversed(self.transactie_lijst) if transactie.datumtijd <= datum), 0) / 100
     
-    def saldo(
-        self,
-        datum_vanaf :   dt.datetime.date    =   None,
-        datum_tot   :   dt.datetime.date    =   None,
-        ) -> pd.DataFrame:
+    # def saldo(
+    #     self,
+    #     datum_vanaf :   dt.datetime.date    =   None,
+    #     datum_tot   :   dt.datetime.date    =   None,
+    #     ) -> pd.DataFrame:
         
-        datum_vanaf     =   self.actief_van             if datum_vanaf is None else datum_vanaf
-        datum_tot       =   (dt.datetime.now().date() if self.actief else self.actief_tot + dt.timedelta(days = 1)) if datum_tot is None else datum_tot
+    #     datum_vanaf     =   self.actief_van             if datum_vanaf is None else datum_vanaf
+    #     datum_tot       =   (dt.datetime.now().date() if self.actief else self.actief_tot + dt.timedelta(days = 1)) if datum_tot is None else datum_tot
         
-        datum_lijst     =   list(pd.date_range(datum_vanaf, datum_tot, freq = "d"))
-        saldo_lijst     =   [self.saldo_op_datum(datum) for datum in datum_lijst]
-        datum_lijst.insert(0, datum_lijst[0] - dt.timedelta(days = 1))
-        saldo_lijst.insert(0, 0)
+    #     datum_lijst     =   list(pd.date_range(datum_vanaf, datum_tot, freq = "d"))
+    #     saldo_lijst     =   [self.saldo_op_datum(datum) for datum in datum_lijst]
+    #     datum_lijst.insert(0, datum_lijst[0] - dt.timedelta(days = 1))
+    #     saldo_lijst.insert(0, 0)
         
-        return pd.DataFrame({"datumtijd": datum_lijst, "saldo": saldo_lijst})
+    #     return pd.DataFrame({"datumtijd": datum_lijst, "saldo": saldo_lijst})
     
     def tabel(
         self,
@@ -1118,19 +1120,89 @@ class Rekening:
         banken          = 	open_json("gegevens\\derden",           "bank",           "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
         cpsps           = 	open_json("gegevens\\derden",           "cpsp",           "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         categorieen     =   open_json("gegevens\\configuratie",     "categorie",      "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
-        hoofdcategorieen=   open_json("gegevens\\configuratie",     "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam",)), "van_json"),)
+        hoofdcategorieen=   open_json("gegevens\\configuratie",     "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
         
-        return pd.DataFrame([transactie_rij for transactie_rij in [transactie.naar_tabel(
-            tabel_type,
-            personen,
-            bedrijven,
-            bankrekeningen,
-            banken,
-            cpsps,
-            categorieen,
-            hoofdcategorieen,
+        if tabel_type == "algemeen":
+            return pd.DataFrame([transactie_rij for transactie_rij in [transactie.naar_tabel(
+                tabel_type,
+                personen,
+                bedrijven,
+                bankrekeningen,
+                banken,
+                cpsps,
+                categorieen,
+                hoofdcategorieen,
             ) for transactie in self.transactie_lijst] if transactie_rij is not None])
-
+        
+        elif tabel_type == "jaar-maand":
+            
+            tabel   =   self.tabel("algemeen")
+            
+            data    =   []
+            
+            datum_start =   self.actief_van
+            datum_eind  =   self.actief_tot if not self.actief else (dt.date.today().replace(year = dt.date.today().year-1, month = 12, day = 1) if dt.date.today().month == 1 else dt.date.today().replace(month = dt.date.today().month-1, day = 1))
+            
+            for jaar, maand in jaar_maand_iterator(datum_start.year, datum_start.month, datum_eind.year, datum_eind.month):
+                if maand < 12:
+                    mask = (tabel["datumtijd"] >= dt.datetime(jaar, maand, 1)) & (tabel["datumtijd"] < dt.datetime(jaar, maand + 1, 1))
+                else:
+                    mask = (tabel["datumtijd"] >= dt.datetime(jaar, maand, 1)) & (tabel["datumtijd"] < dt.datetime(jaar + 1, 1, 1))
+                
+                tabel_tijdelijk = tabel[mask]
+                
+                for categorie in categorieen.values():
+                    if categorie.naam == "interne overboeking":
+                        continue
+                    
+                    data.append({
+                        "datumtijd":        dt.date(jaar, maand, 1),
+                        "hoofdcategorie":   hoofdcategorieen[categorie.hoofdcat_uuid].naam,
+                        "categorie":        categorie.naam,
+                        "uitgave":          tabel_tijdelijk.loc[(tabel_tijdelijk["categorie"] == categorie.naam) & (tabel_tijdelijk["bedrag"] < 0)]["bedrag"].sum(),
+                        "inkomst":          tabel_tijdelijk.loc[(tabel_tijdelijk["categorie"] == categorie.naam) & (tabel_tijdelijk["bedrag"] > 0)]["bedrag"].sum(),
+                        })
+            
+            return pd.DataFrame(data)
+    
+    # def dataset(self) -> xr.Dataset:
+        
+    #     categorieen     =   open_json("gegevens\\configuratie",     "categorie",      "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
+    #     hoofdcategorieen=   open_json("gegevens\\configuratie",     "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
+        
+    #     tabel = self.tabel()
+        
+    #     if self.actief:
+    #         jaren   =   [jaar for jaar in range(self.actief_van.year, dt.datetime.today().year+1)]
+    #     else:
+    #         jaren  =   [jaar for jaar in range(self.actief_van.year, self.actief_tot.year+1)]
+    #     maanden     =   list(range(1,13))
+        
+    #     categorieen_uitgave         =   [categorie for categorie in categorieen.values() if hoofdcategorieen[categorie.hoofdcat_uuid].type == "uitgave" and categorie.naam != "interne overboeking"]
+    #     hoofdcategorieen_uitgave    =   [hoofdcategorieen[categorie.hoofdcat_uuid] for categorie in categorieen_uitgave]
+        
+    #     dict_uitgave    =   {}
+        
+    #     for ijaar, jaar in enumerate(jaren):
+    #         for imaand, maand in enumerate(maanden):
+    #             if maand < 12:
+    #                 mask = (tabel["datumtijd"] >= dt.datetime(jaar, maand, 1)) & (tabel["datumtijd"] < dt.datetime(jaar, maand + 1, 1))
+    #             else:
+    #                 mask = (tabel["datumtijd"] >= dt.datetime(jaar, maand, 1)) & (tabel["datumtijd"] < dt.datetime(jaar + 1, 1, 1))
+                
+    #             tabel_temp = tabel[mask]
+                
+    #             df = pd.DataFrame(data = {
+    #                 "bedrag": [-tabel_temp.loc[tabel_temp["categorie"] == categorie.naam]["bedrag"].sum() for categorie in categorieen_uitgave],
+    #                 "categorie": [categorie.naam for categorie in categorieen_uitgave],
+    #                 "hoofdcategorie": [hoofdcategorie.naam for hoofdcategorie in hoofdcategorieen_uitgave],
+    #                 }
+    #             )
+                
+    #             dict_uitgave[f"{jaar}-{maand:02}"]  =   df
+                
+    #     return dict_uitgave
+    
 class Bankrekening(Rekening): 
     
     def __init__(
