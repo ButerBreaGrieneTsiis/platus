@@ -6,167 +6,266 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from grienetsiis.kleuren import standaard
-from platus.gegevens.rekening import Bankrekening, Lening
+from grienetsiis.gereedschap import jaar_maand_iterator
+from grienetsiis.kleuren import standaard, wit_gebroken
+from grienetsiis.lezerschrijver import open_json
+from ..gegevens.rekening import Bankrekening, Lening
 
 
 def paneel():
-
+    
     @st.cache_data
-    def laden_gegevens():
-        florijnenvloot  =   Bankrekening.openen("57476f22-a7fd-483c-87c7-e34455d85151")
-        betaalrekening  =   Bankrekening.openen("c294f10e-449a-4694-ade7-2e33c2893842")
-        spaarrekening   =   Bankrekening.openen("ce5571d5-e994-48cf-a3aa-627f02136dee")
-        studieschuld_1  =   Lening.openen("5f2be611-820e-4d49-a12a-5d2b46e1e524")
-        studieschuld_2  =   Lening.openen("5bce9007-bf69-4f85-88ff-216b6607d812")
-        return florijnenvloot, betaalrekening, spaarrekening, studieschuld_1, studieschuld_2
+    def laden_bankrekeningen():
+        bankrekeningen = open_json("gegevens\\configuratie", "bankrekening", "json")
+        return {bankrekening_uuid: Bankrekening.openen(bankrekening_uuid).tabel() for bankrekening_uuid in bankrekeningen.keys()}
     
-    def hash_func(obj: Bankrekening) -> int:
-        return obj.uuid
+    @st.cache_data
+    def laden_leningen():
+        leningen = open_json("gegevens\\configuratie", "lening", "json")
+        return {lening_uuid: Lening.openen(lening_uuid).tabel() for lening_uuid in leningen.keys()}
     
-    @st.cache_data(hash_funcs={Bankrekening: hash_func, Lening: hash_func})
-    def laden_tabel(*bankrekeningen: List[Bankrekening]):
-        return [bankrekening.tabel() for bankrekening in bankrekeningen]
+    @st.cache_data
+    def maken_som(
+        bankrekeningen: List[Bankrekening],
+        leningen: List[Lening],
+        ):
+        bankrekening_som                =   reduce(lambda left, right: pd.merge(left, right, on = "datumtijd", how = "outer", suffixes = ("_1", "_2")), [bankrekening[["datumtijd", "eindsaldo"]] for bankrekening in bankrekeningen.values()]).ffill().fillna(0)
+        bankrekening_som["eindsaldo"]   =   bankrekening_som.drop("datumtijd", axis=1).sum(axis=1)
+        bankrekening_som                =   bankrekening_som.loc[:, bankrekening_som.columns.intersection(["datumtijd", "eindsaldo"])]
+        
+        lening_som                      =   reduce(lambda left, right: pd.merge(left, right, on = "datumtijd", how = "outer", suffixes = ("_1", "_2")), [lening[["datumtijd", "eindsaldo"]] for lening in leningen.values()]).ffill().fillna(0)
+        lening_som["eindsaldo"]         =   lening_som.drop("datumtijd", axis=1).sum(axis=1)
+        lening_som                      =   lening_som.loc[:, lening_som.columns.intersection(["datumtijd", "eindsaldo"])]
+        
+        return bankrekening_som, lening_som
     
-    florijnenvloot, betaalrekening, spaarrekening, studieschuld_1, studieschuld_2                                   =   laden_gegevens()
-    florijnenvloot_tabel, betaalrekening_tabel, spaarrekening_tabel, studieschuld_1_tabel, studieschuld_2_tabel     =   laden_tabel(florijnenvloot, betaalrekening, spaarrekening, studieschuld_1, studieschuld_2)
+    @st.cache_data
+    def laden():
+        return open_json("gegevens\\configuratie", "weergave", "json")
     
-    rekeningen                      =   [florijnenvloot_tabel[["datumtijd", "eindsaldo"]], betaalrekening_tabel[["datumtijd", "eindsaldo"]], spaarrekening_tabel[["datumtijd", "eindsaldo"]]]
-    rekeningen_tabel                =   reduce(lambda left, right: pd.merge(left, right, on = "datumtijd", how = "outer", suffixes = ("_1", "_2")), rekeningen).ffill().fillna(0)
-    rekeningen_tabel["eindsaldo"]   =   rekeningen_tabel.drop("datumtijd", axis=1).sum(axis=1)
-    rekeningen_tabel                =   rekeningen_tabel.loc[:, rekeningen_tabel.columns.intersection(["datumtijd", "eindsaldo"])]
-    
-    leningen                        =   [studieschuld_1_tabel[["datumtijd", "eindsaldo"]], studieschuld_2_tabel[["datumtijd", "eindsaldo"]]]
-    leningen_tabel                  =   reduce(lambda left, right: pd.merge(left, right, on = "datumtijd", how = "outer", suffixes = ("_1", "_2")), leningen).ffill().fillna(0)
-    leningen_tabel["eindsaldo"]     =   leningen_tabel.drop("datumtijd", axis=1).sum(axis=1)
-    leningen_tabel                  =   leningen_tabel.loc[:, leningen_tabel.columns.intersection(["datumtijd", "eindsaldo"])]
+    bankrekeningen = laden_bankrekeningen()
+    leningen = laden_leningen()
+    bankrekening_som, lening_som = maken_som(bankrekeningen, leningen)
+    weergave_configuratie = laden()
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.session_state["domein_1_begin"], st.session_state["domein_1_eind"] = st.slider(
-            "domein_1",
-            dt.date(1998,1,1),
-            dt.date.today(),
-            (dt.date.today().replace(year = dt.date.today().year - 5), dt.date.today()),
-            dt.timedelta(days = 1),
-            key = "domein_1"
-            )
+        invoer_domein_1 = st.empty()
+        figuur_bankrekeningen_saldo = st.empty()
+        figuur_leningen_saldo = st.empty()
     
     with col2:
-        col2_1, col2_2 = st.columns(2)
-        with col2_1:
-            st.session_state["domein_2_jaar"]   = st.selectbox("jaar", range(dt.datetime.today().year, 1997, -1), 0)
-        with col2_2:
-            if st.session_state["domein_2_jaar"] == dt.datetime.today().year:
-                st.session_state["domein_2_maand"]  = st.selectbox("maand", range(1, dt.datetime.today().month), dt.datetime.today().month - 2)
-            else:
-                st.session_state["domein_2_maand"]  = st.selectbox("maand", range(1, 13), 0)
+        inover_domein_2 = st.empty()
+        figuur_inkomsten = st.empty()
+        figuur_uitgaven = st.empty()
+        figuur_categorie = st.empty()
     
-    domein_1        =   [st.session_state["domein_1_begin"], st.session_state["domein_1_eind"]]
+    st.session_state["domein_1_begin"], st.session_state["domein_1_eind"] = invoer_domein_1.select_slider(
+        "domein_1",
+        [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(weergave_configuratie["algemeen"]["begin_jaar"], weergave_configuratie["algemeen"]["begin_maand"], dt.date.today().year, dt.date.today().month)],
+        (alt.DateTime(year = dt.date.today().year - 5, month = dt.date.today().month), alt.DateTime(year = dt.date.today().year, month = dt.date.today().month)),
+        lambda jaarmaand: f"{jaarmaand.year}-{jaarmaand.month:02}"
+    )
     
-    figuur_saldo_florijnenvloot     =   alt.Chart(florijnenvloot_tabel).mark_line(clip = True, interpolate = "step-after").encode(
-                                            x       =   alt.X("datumtijd:T").scale(domain = domein_1),
-                                            y       =   alt.Y("eindsaldo:Q"),
-                                            color   =   alt.value(standaard.cyaan.hex),
-                                            tooltip =   [alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"), alt.Tooltip("eindsaldo", format = ".2f")]
-                                        )
-    figuur_saldo_spaarrekening      =   alt.Chart(spaarrekening_tabel).mark_line(clip = True, interpolate = "step-after").encode(
-                                            x       =   alt.X("datumtijd:T").scale(domain = domein_1),
-                                            y       =   alt.Y("eindsaldo:Q"),
-                                            color   =   alt.value(standaard.magenta.hex),
-                                            tooltip =   [alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"), alt.Tooltip("eindsaldo", format = ".2f")]
-                                        )
-    figuur_saldo_betaalrekening     =   alt.Chart(betaalrekening_tabel).mark_line(clip = True, interpolate = "step-after").encode(
-                                            x       =   alt.X("datumtijd:T").scale(domain = domein_1),
-                                            y       =   alt.Y("eindsaldo:Q"),
-                                            color   =   alt.value(standaard.geel.hex),
-                                            tooltip =   [alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"), alt.Tooltip("eindsaldo", format = ".2f")]
-                                        )
-    figuur_saldo_rekeningen         =   alt.Chart(rekeningen_tabel).mark_line(clip = True, interpolate = "step-after", strokeOpacity = 0.2).encode(
-                                            x       =   alt.X("datumtijd:T").scale(domain = domein_1),
-                                            y       =   alt.Y("eindsaldo:Q"),
-                                            color   =   alt.value(standaard.groen.hex),
-                                            tooltip =   [alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"), alt.Tooltip("eindsaldo", format = ".2f")]
-                                        )
+    st.session_state["domein_2"] = inover_domein_2.select_slider(
+        "domein_2",
+        [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(weergave_configuratie["betaalrekening"]["begin_jaar"], weergave_configuratie["betaalrekening"]["begin_maand"], dt.date.today().year, dt.date.today().month)],
+        alt.DateTime(year = dt.date.today().year, month = dt.date.today().month - 1),
+        lambda jaarmaand: f"{jaarmaand.year}-{jaarmaand.month:02}"
+    )
     
-    figuur_saldo_studieschuld_1      =   alt.Chart(studieschuld_1_tabel).mark_line(clip = True, interpolate = "step-after").encode(
-                                            x       =   alt.X("datumtijd:T").scale(domain = domein_1),
-                                            y       =   alt.Y("eindsaldo:Q"),
-                                            color   =   alt.value(standaard.cyaan.hex),
-                                            tooltip =   [alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"), alt.Tooltip("eindsaldo", format = ".2f")]
-                                        )
-    figuur_saldo_studieschuld_2     =   alt.Chart(studieschuld_2_tabel).mark_line(clip = True, interpolate = "step-after").encode(
-                                            x       =   alt.X("datumtijd:T").scale(domain = domein_1),
-                                            y       =   alt.Y("eindsaldo:Q"),
-                                            color   =   alt.value(standaard.magenta.hex),
-                                            tooltip =   [alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"), alt.Tooltip("eindsaldo", format = ".2f")]
-                                        )
-    figuur_saldo_studieschuld_totaal=   alt.Chart(leningen_tabel).mark_line(clip = True, interpolate = "step-after", strokeOpacity = 0.2).encode(
-                                            x       =   alt.X("datumtijd:T").scale(domain = domein_1),
-                                            y       =   alt.Y("eindsaldo:Q"),
-                                            color   =   alt.value(standaard.groen.hex),
-                                            tooltip =   [alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"), alt.Tooltip("eindsaldo", format = ".2f")]
-                                        )
+    charts_bankrekening_saldo = []
+    for bankrekening_uuid, bankrekening in bankrekeningen.items():
+        charts_bankrekening_saldo.append(
+            alt.Chart(
+                bankrekening,
+            ).mark_line(
+                clip = True,
+                interpolate = "step-after",
+            ).encode(
+                x       =   alt.X("datumtijd:T"),
+                y       =   alt.Y("eindsaldo:Q"),
+                color   =   alt.value(getattr(standaard, weergave_configuratie["rekeningen"]["kleuren"][bankrekening_uuid]).hex),
+                tooltip =   [
+                    alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"),
+                    alt.Tooltip("eindsaldo", format = ".2f"),
+                    ]
+            ).transform_filter(
+                alt.FieldRangePredicate(
+                    field = "datumtijd",
+                    range = (
+                        st.session_state["domein_1_begin"],
+                        st.session_state["domein_1_eind"],
+                        ),
+                    ),
+            ),
+        )
     
-    figuur_inkomsten_betaalrekening = alt.Chart(betaalrekening_tabel).mark_area(clip = True).encode(
-        x       =   alt.X("yearmonth(datumtijd):T").scale(domain = domein_1),
-        y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
-        color   =   alt.Color("hoofdcategorie:N", legend = None),
-        tooltip =   [alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"), alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"), alt.Tooltip("sum(bedrag):Q", format = ".2f")]
-        ).transform_filter((alt.datum.bedrag > 0.0) & (alt.datum.categorie != "interne overboeking"))
+    charts_bankrekening_saldo.append(
+            alt.Chart(
+                bankrekening_som
+            ).mark_line(
+                clip = True,
+                interpolate = "step-after",
+                strokeOpacity = 0.2,
+            ).encode(
+                x       =   alt.X("datumtijd:T"),
+                y       =   alt.Y("eindsaldo:Q"),
+                color   =   alt.value(wit_gebroken.hex),
+                tooltip =   [
+                    alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"),
+                    alt.Tooltip("eindsaldo", format = ".2f"),
+                    ]
+            ).transform_filter(
+                alt.FieldRangePredicate(
+                    field = "datumtijd",
+                    range = (
+                        st.session_state["domein_1_begin"],
+                        st.session_state["domein_1_eind"],
+                        ),
+                    ),
+            ),
+        )
     
-    figuur_uitgaven_betaalrekening = alt.Chart(betaalrekening_tabel).mark_area(clip = True).encode(
-        x       =   alt.X("yearmonth(datumtijd):T").scale(domain = domein_1),
-        y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
-        color   =   alt.Color("hoofdcategorie:N", legend = None),
-        tooltip =   [alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"), alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"), alt.Tooltip("sum(bedrag):Q", format = ".2f")]
-        ).transform_filter((alt.datum.bedrag < 0.0) & (alt.datum.categorie != "interne overboeking"))
+    charts_lening_saldo = []
+    for lening_uuid, lening in leningen.items():
+        charts_lening_saldo.append(
+            alt.Chart(
+                lening,
+            ).mark_line(
+                clip = True,
+                interpolate = "step-after",
+            ).encode(
+                x       =   alt.X("datumtijd:T"),
+                y       =   alt.Y("eindsaldo:Q"),
+                color   =   alt.value(getattr(standaard, weergave_configuratie["rekeningen"]["kleuren"][lening_uuid]).hex),
+                tooltip =   [
+                    alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"),
+                    alt.Tooltip("eindsaldo", format = ".2f"),
+                    ]
+            ).transform_filter(
+                alt.FieldRangePredicate(
+                    field = "datumtijd",
+                    range = (
+                        st.session_state["domein_1_begin"],
+                        st.session_state["domein_1_eind"],
+                        ),
+                    ),
+            ),
+        )
     
-    figuur_inkomsten_jaarmaand_betaalrekening = alt.Chart(betaalrekening_tabel).mark_bar().encode(
-        x       =   alt.X("hoofdcategorie"),
-        y       =   alt.Y("sum(bedrag):Q"),
-        color   =   alt.Color("categorie:N"),
-        tooltip =   [alt.Tooltip("categorie", title = "categorie"), alt.Tooltip("sum(bedrag):Q", format = ".2f")]
-        ).transform_filter((alt.FieldEqualPredicate(field = "datumtijd", equal = alt.DateTime(year = st.session_state["domein_2_jaar"], month = st.session_state["domein_2_maand"]), timeUnit = "yearmonth"))
-                           & (alt.datum.bedrag > 0.0)
-                           & (alt.datum.categorie != "interne overboeking")
-                           & (alt.datum.hoofdcategorie != "werk")
-                           )
-    figuur_uitgaven_jaarmaand_betaalrekening = alt.Chart(betaalrekening_tabel).mark_bar().encode(
-        x       =   alt.X("hoofdcategorie"),
-        y       =   alt.Y("sum(bedrag):Q"),
-        color   =   alt.Color("categorie:N"),
-        tooltip =   [alt.Tooltip("categorie", title = "categorie"), alt.Tooltip("sum(bedrag):Q", format = ".2f")]
-        ).transform_filter((alt.FieldEqualPredicate(field = "datumtijd", equal = alt.DateTime(year = st.session_state["domein_2_jaar"], month = st.session_state["domein_2_maand"]), timeUnit = "yearmonth"))
-                           & (alt.datum.bedrag < 0.0)
-                           & (alt.datum.categorie != "interne overboeking")
-                           )
+    charts_lening_saldo.append(
+        alt.Chart(
+            lening_som,
+        ).mark_line(
+            clip = True,
+            interpolate = "step-after",
+            strokeOpacity = 0.2,
+        ).encode(
+            x       =   alt.X("datumtijd:T"),
+            y       =   alt.Y("eindsaldo:Q"),
+            color   =   alt.value(wit_gebroken.hex),
+            tooltip =   [
+                alt.Tooltip("datumtijd:T", format = "%d %B %Y", title = "datum"),
+                alt.Tooltip("eindsaldo", format = ".2f"),
+                ]
+        ).transform_filter(
+            alt.FieldRangePredicate(
+                field = "datumtijd",
+                range = (
+                    st.session_state["domein_1_begin"],
+                    st.session_state["domein_1_eind"],
+                    ),
+                ),
+        ),
+    )
     
-    with col1:
-        figuur_rekeningen   =   st.empty()
-        figuur_leningen     =   st.empty()
-        
-        figuur_rekeningen.altair_chart(figuur_saldo_florijnenvloot + figuur_saldo_spaarrekening + figuur_saldo_betaalrekening + figuur_saldo_rekeningen)
-        figuur_leningen.altair_chart(figuur_saldo_studieschuld_1 + figuur_saldo_studieschuld_2 + figuur_saldo_studieschuld_totaal)
+    chart_inkomsten = alt.Chart(
+        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        ).mark_area(
+            clip = True,
+        ).encode(
+            x       =   alt.X("yearmonth(datumtijd):T"),
+            y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
+            color   =   alt.Color("hoofdcategorie:N", legend = None),
+            tooltip =   [
+                alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"),
+                alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"),
+                alt.Tooltip("sum(bedrag):Q", format = ".2f"),
+                ],
+        ).transform_filter(
+            (alt.datum.bedrag > 0.0) & (alt.datum.categorie != "interne overboeking"),
+        ).transform_filter(
+            alt.FieldRangePredicate(
+                field = "datumtijd",
+                range = (
+                    st.session_state["domein_1_begin"],
+                    st.session_state["domein_1_eind"],
+                    ),
+                ),
+        )
     
-    with col2:
-        figuur_inkomsten            =   st.empty()
-        figuur_uitgaven             =   st.empty()
-        figuur_categorie_jaarmaand  =   st.empty()
-        
-        figuur_inkomsten.altair_chart(figuur_inkomsten_betaalrekening)
-        figuur_uitgaven.altair_chart(figuur_uitgaven_betaalrekening)
-        figuur_categorie_jaarmaand.altair_chart(figuur_inkomsten_jaarmaand_betaalrekening + figuur_uitgaven_jaarmaand_betaalrekening)
-        
-        """
-         - [ ] kaart met pinbetalingen per locatie, waarbij grote van bolletje de totale uitgave betekent
-             - [ ] locatie/land vervangen door een Locatie object met velden: naam, land, coordinaten (long, lat) tuple
-         - [ ] een st.column met daarin de gemiddelde uitgave voor geselecteerde categorie per maand, met een slider voor het jaar 
-         - [ ] knopjes voor "afgelopen 3 maanden", "afgelopen 6 maanden" etc. i.p.v. sliders?
-         - [ ] toggle tussen stack center/normalize
-         - [ ] tellers
-             - [ ] totale inkomsten (minus intern) afgelopen maand, afgelopen jaar, huidige jaar
-             - [ ] totale uitgaven (minus intern) afgelopen maand, afgelopen jaar, huidige jaar
-             - [ ] totale uitgaven per geselecteerde categorie afgelopen maand, afgelopen jaar, huidige jaar
-        """
+    chart_uitgaven = alt.Chart(
+        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        ).mark_area(
+            clip = True,
+        ).encode(
+            x       =   alt.X("yearmonth(datumtijd):T"),
+            y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
+            color   =   alt.Color("hoofdcategorie:N", legend = None),
+            tooltip =   [
+                alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"),
+                alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"),
+                alt.Tooltip("sum(bedrag):Q", format = ".2f"),
+                ],
+        ).transform_filter(
+            (alt.datum.bedrag < 0.0) & (alt.datum.categorie != "interne overboeking"),
+        ).transform_filter(
+            alt.FieldRangePredicate(
+                field = "datumtijd",
+                range = (
+                    st.session_state["domein_1_begin"],
+                    st.session_state["domein_1_eind"],
+                    ),
+                ),
+        )
+    
+    chart_categorie_inkomsten = alt.Chart(
+        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        ).mark_bar().encode(
+            x       =   alt.X("hoofdcategorie"),
+            y       =   alt.Y("sum(bedrag):Q").impute(value = 0),
+            color   =   alt.Color("categorie:N"),
+            tooltip =   [
+                alt.Tooltip("categorie", title = "categorie"),
+                alt.Tooltip("sum(bedrag):Q", format = ".2f"),
+                ]
+        ).transform_filter(
+            (alt.FieldEqualPredicate(field = "datumtijd", equal = st.session_state["domein_2"], timeUnit = "yearmonth"))
+            & (alt.datum.bedrag > 0.0)
+            & (alt.datum.categorie != "interne overboeking")
+            & (alt.datum.hoofdcategorie != "werk")
+        )
+    
+    chart_categorie_uitgaven = alt.Chart(
+        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        ).mark_bar().encode(
+            x       =   alt.X("hoofdcategorie"),
+            y       =   alt.Y("sum(bedrag):Q").impute(value = 0),
+            color   =   alt.Color("categorie:N"),
+            tooltip =   [
+                alt.Tooltip("categorie", title = "categorie"),
+                alt.Tooltip("sum(bedrag):Q", format = ".2f"),
+                ]
+        ).transform_filter(
+            (alt.FieldEqualPredicate(field = "datumtijd", equal = st.session_state["domein_2"], timeUnit = "yearmonth"))
+            & (alt.datum.bedrag < 0.0)
+            & (alt.datum.categorie != "interne overboeking")
+        )
+    
+    figuur_bankrekeningen_saldo.altair_chart(alt.layer(*charts_bankrekening_saldo))
+    figuur_leningen_saldo.altair_chart(alt.layer(*charts_lening_saldo))
+    figuur_inkomsten.altair_chart(chart_inkomsten)
+    figuur_uitgaven.altair_chart(chart_uitgaven)
+    figuur_categorie.altair_chart(chart_categorie_inkomsten + chart_categorie_uitgaven)
