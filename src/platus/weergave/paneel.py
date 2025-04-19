@@ -29,6 +29,7 @@ def paneel():
         bankrekeningen: List[Bankrekening],
         leningen: List[Lening],
         ):
+        
         bankrekening_som                =   reduce(lambda left, right: pd.merge(left, right, on = "datumtijd", how = "outer", suffixes = ("_1", "_2")), [bankrekening[["datumtijd", "eindsaldo"]] for bankrekening in bankrekeningen.values()]).ffill().fillna(0)
         bankrekening_som["eindsaldo"]   =   bankrekening_som.drop("datumtijd", axis=1).sum(axis=1)
         bankrekening_som                =   bankrekening_som.loc[:, bankrekening_som.columns.intersection(["datumtijd", "eindsaldo"])]
@@ -41,36 +42,59 @@ def paneel():
     
     @st.cache_data
     def laden():
-        return open_json("gegevens\\configuratie", "weergave", "json")
+        weergave_configuratie = open_json("gegevens\\configuratie", "weergave", "json")
+        gegevens_benelux = alt.Data(
+            url = "https://raw.githubusercontent.com/ButerBreaGrieneTsiis/platus/refs/heads/development/weergave/assets/benelux_groot.geo.json",
+            format = alt.DataFormat(
+                property = "features",
+                type = "json",
+                ),
+            )
+        
+        return weergave_configuratie, gegevens_benelux
     
     bankrekeningen = laden_bankrekeningen()
     leningen = laden_leningen()
     bankrekening_som, lening_som = maken_som(bankrekeningen, leningen)
-    weergave_configuratie = laden()
+    weergave_configuratie, gegevens_benelux = laden()
     
-    col1, col2, col3 = st.columns(3)
+    kolom_1, kolom_2, kolom_3 = st.columns(3)
     
-    with col1:
+    with kolom_1:
         invoer_domein_1 = st.empty()
         figuur_bankrekeningen_saldo = st.empty()
         figuur_leningen_saldo = st.empty()
     
-    with col2:
+    with kolom_2:
         inover_domein_2 = st.empty()
         figuur_inkomsten = st.empty()
         figuur_uitgaven = st.empty()
         figuur_categorie = st.empty()
     
+    with kolom_3:
+        kaart_europa = st.empty()
+        
+    
     st.session_state["domein_1_begin"], st.session_state["domein_1_eind"] = invoer_domein_1.select_slider(
         "domein_1",
-        [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(weergave_configuratie["algemeen"]["begin_jaar"], weergave_configuratie["algemeen"]["begin_maand"], dt.date.today().year, dt.date.today().month)],
+        [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(
+            weergave_configuratie["algemeen"]["begin_jaar"],
+            weergave_configuratie["algemeen"]["begin_maand"],
+            dt.date.today().year,
+            dt.date.today().month,
+            )],
         (alt.DateTime(year = dt.date.today().year - 5, month = dt.date.today().month), alt.DateTime(year = dt.date.today().year, month = dt.date.today().month)),
         lambda jaarmaand: f"{jaarmaand.year}-{jaarmaand.month:02}"
     )
     
     st.session_state["domein_2"] = inover_domein_2.select_slider(
         "domein_2",
-        [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(weergave_configuratie["betaalrekening"]["begin_jaar"], weergave_configuratie["betaalrekening"]["begin_maand"], dt.date.today().year, dt.date.today().month)],
+        [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(
+            weergave_configuratie["betaalrekening"]["begin_jaar"],
+            weergave_configuratie["betaalrekening"]["begin_maand"],
+            dt.date.today().year,
+            dt.date.today().month,
+            )],
         alt.DateTime(year = dt.date.today().year, month = dt.date.today().month - 1),
         lambda jaarmaand: f"{jaarmaand.year}-{jaarmaand.month:02}"
     )
@@ -269,3 +293,53 @@ def paneel():
     figuur_inkomsten.altair_chart(chart_inkomsten)
     figuur_uitgaven.altair_chart(chart_uitgaven)
     figuur_categorie.altair_chart(chart_categorie_inkomsten + chart_categorie_uitgaven)
+    
+    grondkaart_benelux = alt.Chart(gegevens_benelux).mark_geoshape(
+        ).encode(
+            color = alt.Color("properties.name:N", legend = None),
+            tooltip = [
+                alt.Tooltip("properties.name_nl:N", title = "land")
+            ]
+        ).project(
+            type = "mercator",
+            scale = 7500,
+            center = [5.387201, 52.155172],    
+        ).properties(
+            title = "Europe (Mercator)",
+            width = 300,
+            height = 800,
+    )
+    
+    pinbas_benelux = alt.Chart(
+        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+    ).mark_circle(
+        fillOpacity = 0.8,
+        strokeOpacity = 1.0,
+    ).encode(
+        latitude = "breedtegraad:Q",
+        longitude = "lengtegraad:Q",
+        size = alt.Size("sum(bedrag_abs):Q", scale = alt.Scale(type = "log", range = [0, 1_000]), legend = None),
+        tooltip = [
+            alt.Tooltip("locatie", title = "locatie"),
+            alt.Tooltip("sum(bedrag_abs):Q", format = ".2f"),
+            ],
+        color = alt.value(wit_gebroken.hex),
+    ).transform_filter(
+        alt.FieldRangePredicate(
+            field = "datumtijd",
+            range = (
+                st.session_state["domein_1_begin"],
+                st.session_state["domein_1_eind"],
+                ),
+            ),
+    ).project(
+        type = "mercator",
+        scale = 7500,
+        center = [5.387201, 52.155172],    
+    ).properties(
+        title = "Europe (Mercator)",
+        width = 300,
+        height = 800,
+    )
+    
+    kaart_europa.altair_chart(grondkaart_benelux + pinbas_benelux)

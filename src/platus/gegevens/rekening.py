@@ -11,6 +11,8 @@ import xarray as xr
 from grienetsiis import open_json, opslaan_json, invoer_validatie, invoer_kiezen
 from .categorie import Categorie, HoofdCategorie
 from .derden import Persoon, Bedrijf, Derde, Bank, Cpsp
+from .gereedschap import iban_zoeker
+from .locatie import Land, Locatie
 
 
 locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
@@ -182,6 +184,8 @@ class Transactie:
             cpsps           :   Dict[str, Cpsp]             =   None,
             categorieen     :   Dict[str, Categorie]        =   None,
             hoofdcategorieen:   Dict[str, HoofdCategorie]   =   None,
+            locaties        :   Dict[str, Locatie]          =   None,
+            landen          :   Dict[str, Land]             =   None,
             ) -> dict:
         
         personen            =   personen            if personen         is not None else open_json("gegevens\\derden",          "persoon",          "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
@@ -191,6 +195,8 @@ class Transactie:
         cpsps               =   cpsps               if cpsps            is not None else open_json("gegevens\\derden",          "cpsp",             "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie",    "categorie",        "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
         hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie",    "hoofdcategorie",   "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
+        locaties            =   locaties            if locaties         is not None else open_json("gegevens\\configuratie",    "locatie",          "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
+        landen              =   landen              if landen           is not None else open_json("gegevens\\configuratie",    "land",             "json", class_mapper = (Land, frozenset(("naam", "iso_3166_1_alpha_3", "synoniemen")), "van_json"),)
         
         derde   =   self.derde(
                         personen,
@@ -203,6 +209,7 @@ class Transactie:
         return {
                 "index":                self.index,
                 "bedrag":               self.bedrag / 100,
+                "bedrag_abs":           abs(self.bedrag / 100),
                 "beginsaldo":           self.beginsaldo / 100,
                 "eindsaldo":            self.eindsaldo / 100,
                 "transactiemethode":    self.transactiemethode,
@@ -212,8 +219,10 @@ class Transactie:
                 "categorie":            self.categorie(categorieen).naam,
                 "derde":                derde["naam"]  if isinstance(derde, dict) else derde.naam,
                 "type":                 "bankrekening" if isinstance(derde, dict) else derde.type,
-                "locatie":              self.details["locatie"] if "locatie" in self.details.keys() else None,
-                "land":                 self.details["land"] if "land" in self.details.keys() else None,
+                "locatie":              locaties[self.details["locatie_uuid"]].naam if "locatie_uuid" in self.details.keys() else None,
+                "breedtegraad":         locaties[self.details["locatie_uuid"]].breedtegraad if "locatie_uuid" in self.details.keys() else None,
+                "lengtegraad":          locaties[self.details["locatie_uuid"]].lengtegraad if "locatie_uuid" in self.details.keys() else None,
+                # "land":                 landen[locaties[self.details["locatie_uuid"]].land_uuid].naam if "locatie_uuid" in self.details.keys() else None,
                 "pasnummer":            self.details["pasnummer"] if "pasnummer" in self.details.keys() else None,
                 }
     
@@ -1078,6 +1087,8 @@ class Rekening:
         cpsps           = 	open_json("gegevens\\derden",           "cpsp",           "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         categorieen     =   open_json("gegevens\\configuratie",     "categorie",      "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
         hoofdcategorieen=   open_json("gegevens\\configuratie",     "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
+        locaties        =   open_json("gegevens\\configuratie",     "locatie",        "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
+        landen          =   open_json("gegevens\\configuratie",     "land",           "json", class_mapper = (Land, frozenset(("naam", "iso_3166_1_alpha_3", "synoniemen")), "van_json"),)
         
         return pd.DataFrame([transactie_rij for transactie_rij in [transactie.naar_tabel(
             personen,
@@ -1087,6 +1098,8 @@ class Rekening:
             cpsps,
             categorieen,
             hoofdcategorieen,
+            locaties,
+            landen,
         ) for transactie in self.transactie_lijst] if transactie_rij is not None])
         
 
