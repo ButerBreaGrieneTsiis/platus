@@ -74,7 +74,6 @@ def paneel():
     with kolom_3:
         kaart_europa = st.empty()
         
-    
     st.session_state["domein_1_begin"], st.session_state["domein_1_eind"] = invoer_domein_1.select_slider(
         "domein_1",
         [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(
@@ -207,70 +206,95 @@ def paneel():
     
     chart_inkomsten = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
-        ).mark_area(
-            clip = True,
-        ).encode(
-            x       =   alt.X("yearmonth(datumtijd):T"),
-            y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
-            color   =   alt.Color("hoofdcategorie:N", legend = None),
-            tooltip =   [
-                alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"),
-                alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"),
-                alt.Tooltip("sum(bedrag):Q", format = ".2f"),
-                ],
-        ).transform_filter(
-            (alt.datum.bedrag > 0.0) & (alt.datum.categorie != "interne overboeking"),
-        ).transform_filter(
-            alt.FieldRangePredicate(
+    ).mark_area(
+        clip = True,
+    ).encode(
+        x       =   alt.X("yearmonth(datumtijd):T"),
+        y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
+        color   =   alt.Color("hoofdcategorie:N", legend = None),
+        tooltip =   [
+            alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"),
+            alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"),
+            alt.Tooltip("sum(bedrag):Q", format = ".2f"),
+            ],
+    ).transform_filter(
+            alt.FieldGTPredicate(
+                field = "bedrag",
+                gt = 0.0,
+                )
+            & ~alt.FieldOneOfPredicate(
+                field = "categorie",
+                oneOf = weergave_configuratie["betaalrekening"]["categorie_stackchart_uitsluiten"],
+                )
+            & alt.FieldRangePredicate(
                 field = "datumtijd",
                 range = (
                     st.session_state["domein_1_begin"],
                     st.session_state["domein_1_eind"],
                     ),
-                ),
-        )
+                )
+    )
     
     chart_uitgaven = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
-        ).mark_area(
-            clip = True,
-        ).encode(
-            x       =   alt.X("yearmonth(datumtijd):T"),
-            y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
-            color   =   alt.Color("hoofdcategorie:N", legend = None),
-            tooltip =   [
-                alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"),
-                alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"),
-                alt.Tooltip("sum(bedrag):Q", format = ".2f"),
-                ],
-        ).transform_filter(
-            (alt.datum.bedrag < 0.0) & (alt.datum.categorie != "interne overboeking"),
-        ).transform_filter(
-            alt.FieldRangePredicate(
-                field = "datumtijd",
-                range = (
-                    st.session_state["domein_1_begin"],
-                    st.session_state["domein_1_eind"],
-                    ),
+    ).mark_area(
+        clip = True,
+    ).encode(
+        x       =   alt.X("yearmonth(datumtijd):T"),
+        y       =   alt.Y("sum(bedrag):Q").stack("center").axis(None),
+        color   =   alt.Color("hoofdcategorie:N", legend = None),
+        tooltip =   [
+            alt.Tooltip("hoofdcategorie", title = "hoofdcategorie"),
+            alt.Tooltip("yearmonth(datumtijd):T", format = "%B %Y", title = "datum"),
+            alt.Tooltip("sum(bedrag):Q", format = ".2f"),
+            ],
+    ).transform_filter(
+        alt.FieldLTPredicate(
+                field = "bedrag",
+                lt = 0.0,
+                )
+        & ~alt.FieldOneOfPredicate(
+                field = "categorie",
+                oneOf = weergave_configuratie["betaalrekening"]["categorie_stackchart_uitsluiten"],
+                )
+        & alt.FieldRangePredicate(
+            field = "datumtijd",
+            range = (
+                st.session_state["domein_1_begin"],
+                st.session_state["domein_1_eind"],
                 ),
-        )
+            )
+    )
     
     chart_categorie_inkomsten = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
-        ).mark_bar().encode(
-            x       =   alt.X("hoofdcategorie"),
-            y       =   alt.Y("sum(bedrag):Q").impute(value = 0),
-            color   =   alt.Color("categorie:N"),
-            tooltip =   [
-                alt.Tooltip("categorie", title = "categorie"),
-                alt.Tooltip("sum(bedrag):Q", format = ".2f"),
-                ]
-        ).transform_filter(
-            (alt.FieldEqualPredicate(field = "datumtijd", equal = st.session_state["domein_2"], timeUnit = "yearmonth"))
-            & (alt.datum.bedrag > 0.0)
-            & (alt.datum.categorie != "interne overboeking")
-            & (alt.datum.hoofdcategorie != "werk")
-        )
+    ).mark_bar().encode(
+        x       =   alt.X("hoofdcategorie"),
+        y       =   alt.Y("sum(bedrag):Q").impute(value = 0),
+        color   =   alt.Color("categorie:N"),
+        tooltip =   [
+            alt.Tooltip("categorie", title = "categorie"),
+            alt.Tooltip("sum(bedrag):Q", format = ".2f"),
+            ]
+    ).transform_filter(
+        alt.FieldGTPredicate(
+                field = "bedrag",
+                gt = 0.0,
+                )
+        & ~alt.FieldOneOfPredicate(
+                field = "categorie",
+                oneOf = weergave_configuratie["betaalrekening"]["categorie_staafdiagram_uitsluiten"],
+                )
+        & ~alt.FieldOneOfPredicate(
+                field = "hoofdcategorie",
+                oneOf = weergave_configuratie["betaalrekening"]["hoofdcategorie_staafdiagram_uitsluiten"],
+                )
+        & alt.FieldEqualPredicate(
+            field = "datumtijd",
+            equal = st.session_state["domein_2"],
+            timeUnit = "yearmonth",
+            )
+    )
     
     chart_categorie_uitgaven = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
@@ -283,10 +307,24 @@ def paneel():
                 alt.Tooltip("sum(bedrag):Q", format = ".2f"),
                 ]
         ).transform_filter(
-            (alt.FieldEqualPredicate(field = "datumtijd", equal = st.session_state["domein_2"], timeUnit = "yearmonth"))
-            & (alt.datum.bedrag < 0.0)
-            & (alt.datum.categorie != "interne overboeking")
-        )
+        alt.FieldLTPredicate(
+                field = "bedrag",
+                lt = 0.0,
+                )
+        & ~alt.FieldOneOfPredicate(
+                field = "categorie",
+                oneOf = weergave_configuratie["betaalrekening"]["categorie_staafdiagram_uitsluiten"],
+                )
+        & ~alt.FieldOneOfPredicate(
+                field = "hoofdcategorie",
+                oneOf = weergave_configuratie["betaalrekening"]["hoofdcategorie_staafdiagram_uitsluiten"],
+                )
+        & alt.FieldEqualPredicate(
+            field = "datumtijd",
+            equal = st.session_state["domein_2"],
+            timeUnit = "yearmonth",
+            )
+    )
     
     figuur_bankrekeningen_saldo.altair_chart(alt.layer(*charts_bankrekening_saldo))
     figuur_leningen_saldo.altair_chart(alt.layer(*charts_lening_saldo))
@@ -295,33 +333,36 @@ def paneel():
     figuur_categorie.altair_chart(chart_categorie_inkomsten + chart_categorie_uitgaven)
     
     grondkaart_benelux = alt.Chart(gegevens_benelux).mark_geoshape(
-        ).encode(
-            color = alt.Color("properties.name:N", legend = None),
-            tooltip = [
-                alt.Tooltip("properties.name_nl:N", title = "land")
-            ]
-        ).project(
-            type = "mercator",
-            scale = 7500,
-            center = [5.387201, 52.155172],    
-        ).properties(
-            title = "Europe (Mercator)",
-            width = 300,
-            height = 800,
+        stroke = wit_gebroken.hex,
+        strokeWidth = 1.5,
+    ).encode(
+        # color = alt.Color("properties.name:N", legend = None),
+        # tooltip = [
+        #     alt.Tooltip("properties.name_nl:N", title = "land")
+        # ]
+    ).project(
+        type = "mercator",
+        scale = 7500,
+        center = [5.387201, 52.155172],    
+    ).properties(
+        width = 300,
+        height = 800,
     )
     
     pinbas_benelux = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
     ).mark_circle(
-        fillOpacity = 0.8,
+        fillOpacity = 0.3,
+        fill = standaard.rood.hex,
         strokeOpacity = 1.0,
+        stroke = standaard.rood.hex,
     ).encode(
         latitude = "breedtegraad:Q",
         longitude = "lengtegraad:Q",
-        size = alt.Size("sum(bedrag_abs):Q", scale = alt.Scale(type = "log", range = [0, 1_000]), legend = None),
+        size = alt.Size("sum(bedrag_abs):Q", scale = alt.Scale(bins = [1, 10, 100, 1000, 10_000]), legend = None),
         tooltip = [
             alt.Tooltip("locatie", title = "locatie"),
-            alt.Tooltip("sum(bedrag_abs):Q", format = ".2f"),
+            alt.Tooltip("sum(bedrag_abs):Q", title = "bedrag", format = ".2f"),
             ],
         color = alt.value(wit_gebroken.hex),
     ).transform_filter(
@@ -337,7 +378,6 @@ def paneel():
         scale = 7500,
         center = [5.387201, 52.155172],    
     ).properties(
-        title = "Europe (Mercator)",
         width = 300,
         height = 800,
     )

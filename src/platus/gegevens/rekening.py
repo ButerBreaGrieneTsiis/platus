@@ -222,7 +222,7 @@ class Transactie:
                 "locatie":              locaties[self.details["locatie_uuid"]].naam if "locatie_uuid" in self.details.keys() else None,
                 "breedtegraad":         locaties[self.details["locatie_uuid"]].breedtegraad if "locatie_uuid" in self.details.keys() else None,
                 "lengtegraad":          locaties[self.details["locatie_uuid"]].lengtegraad if "locatie_uuid" in self.details.keys() else None,
-                # "land":                 landen[locaties[self.details["locatie_uuid"]].land_uuid].naam if "locatie_uuid" in self.details.keys() else None,
+                "land":                 landen[locaties[self.details["locatie_uuid"]].land_uuid].naam if "locatie_uuid" in self.details.keys() else None,
                 "pasnummer":            self.details["pasnummer"] if "pasnummer" in self.details.keys() else None,
                 }
     
