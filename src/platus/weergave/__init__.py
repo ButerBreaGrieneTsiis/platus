@@ -1,1 +1,1 @@
-from .paneel import paneel
+from .weergave import weergave
