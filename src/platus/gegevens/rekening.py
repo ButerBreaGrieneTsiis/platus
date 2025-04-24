@@ -4,15 +4,11 @@ import re
 from typing import Dict, Tuple, List, Any
 from uuid import uuid4
 
-import numpy as np
 import pandas as pd
-import xarray as xr
 
 from grienetsiis import open_json, opslaan_json, invoer_validatie, invoer_kiezen
-from .categorie import Categorie, HoofdCategorie
-from .derden import Persoon, Bedrijf, Derde, Bank, Cpsp
 from .gereedschap import iban_zoeker
-from .locatie import Land, Locatie
+from .types import Categorie, HoofdCategorie, Land, Locatie, Persoon, Bedrijf, Derde, Bank, Cpsp
 
 
 locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
@@ -1019,7 +1015,7 @@ class Transactie:
                                     print(f"land veranderd naar \"{landen[land_uuid].naam}\"")
                                     
                                     landen[land_uuid].synoniemen.append(self.tijdelijk["land_oud"].casefold())
-                                    opslaan_json(landen, "gegevens\\configuratie", "land", "json")
+                                    opslaan_json(landen, "gegevens\\configuratie", "land", "json", {"Land": "naar_json"})
                                     break
                         
                         breedtegraad    =   invoer_validatie("breedtegraad", float, valideren = True)
@@ -1042,8 +1038,11 @@ class Transactie:
                                 lengtegraad,
                                 )
                         
+                        self.details["locatie_uuid"]    =   uuid
+                        
                         locaties[uuid] = locatie
-                        opslaan_json(locaties, "gegevens\\configuratie", "locatie", "json")
+                        opslaan_json(locaties, "gegevens\\configuratie", "locatie", "json", {"Locatie": "naar_json"})
+                        break
                     
                     elif opdracht.get("opdracht") == "zoek":
                         
@@ -1076,61 +1075,12 @@ class Transactie:
                         if self.tijdelijk["land_oud"].casefold() != landen[locaties[locatie_uuid].land_uuid].naam.casefold() and self.tijdelijk["land_oud"].casefold() not in landen[locaties[locatie_uuid].land_uuid].synoniemen:
                             landen[locaties[locatie_uuid].land_uuid].synoniemen.append(self.tijdelijk["land_oud"].casefold())
                         
-                        opslaan_json(locaties, "gegevens\\configuratie", "locatie", "json")
-                        opslaan_json(landen, "gegevens\\configuratie", "land", "json")
+                        opslaan_json(locaties, "gegevens\\configuratie", "locatie", "json", {"Locatie": "naar_json"})
+                        opslaan_json(landen, "gegevens\\configuratie", "land", "json", {"Land": "naar_json"})
                         break
             
             else:
                 print("deze transatie bevat geen locatie")
-            
-            
-            
-            
-            
-        
-        # elif veld == "locatie":
-            
-        #     if "locatie" in self.details.keys():
-                
-        #         locatie_nieuw   =   invoer_validatie("locatie", str, valideren =  True)
-        #         if self.details["locatie"] != locatie_nieuw:
-        #             toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
-        #             if toevoegen == "ja":
-        #                 locatie_oud     =   self.details["locatie"]
-        #                 locatiebestand  =   open_json("gegevens\\configuratie", "locatie", "json")
-        #                 if any([locatie_nieuw.casefold() == locatie.casefold() for locatie in locatiebestand.keys()]):
-        #                     locatiebestand[locatie_nieuw].append(locatie_oud)
-        #                 else:
-        #                     locatiebestand[locatie_nieuw]   =   [locatie_oud]
-                        
-        #                 opslaan_json(locatiebestand, "gegevens\\configuratie", "locatie", "json")
-                        
-        #             self.details["locatie"]     =   locatie_nieuw
-                
-        #     else:
-        #         print("deze transatie bevat geen locatie")
-            
-        # elif veld == "land":
-            
-        #     if "land" in self.details.keys():
-                
-        #         land_nieuw      =   invoer_validatie("land", str, valideren =  True)
-        #         if self.details["land"] != land_nieuw:
-        #             toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
-        #             if toevoegen == "ja":
-        #                 land_oud        =   self.details["land"]
-        #                 landenbestand   =   open_json("gegevens\\configuratie", "land", "json")
-        #                 if any([land_nieuw.casefold() == land.casefold() for land in landenbestand.keys()]):
-        #                     landenbestand[land_nieuw].append(land_oud)
-        #                 else:
-        #                     landenbestand[land_nieuw]   =   [land_oud]
-                        
-        #                 opslaan_json(landenbestand, "gegevens\\configuratie", "land", "json")
-                        
-        #             self.details["land"]     =   land_nieuw
-                
-        #     else:
-        #         print("deze transatie bevat geen land")
         
         return self
     
