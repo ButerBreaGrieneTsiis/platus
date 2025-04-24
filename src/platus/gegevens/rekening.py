@@ -15,6 +15,8 @@ locale.setlocale(locale.LC_ALL, "nl_NL.UTF-8")
 
 class Transactie:
     
+    config = open_json("gegevens\\configuratie", "transactie", "json")
+    
     def __init__(
         self,
         bedrag             : int,
@@ -218,12 +220,12 @@ class Transactie:
         
         locatie = self.locatie(
             locaties,
-        )
+            )
         
         land = self.land(
             locaties,
             land,
-        )
+            )
         
         return {
             "index":                self.index,
@@ -250,6 +252,7 @@ class Transactie:
         ):
         
         if rij.muntsoort.casefold() != "eur":
+            # zal ik toevoegen zodra ik een keer buiten de Eurozone zal komen
             raise NotImplementedError
         
         bedrag          =   int(round(100 * rij.transactiebedrag))
@@ -263,8 +266,8 @@ class Transactie:
         if rij.omschrijving.casefold().startswith("rente"):
             
             transactiemethode   =   "rente"
-            cat_uuid            =   "b123402b-7d55-4eb1-9eac-c41df3c784c4"
-            derde_uuid          =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
+            cat_uuid            =   cls.config["rente"]["cat_uuid"]
+            derde_uuid          =   cls.config["rente"]["derde_uuid"]
             details["betalingsomschrijving"]    =   rij.omschrijving.strip()
         
         elif rij.omschrijving.casefold().startswith("BEA, Betaalpas".casefold()) or rij.omschrijving.casefold().startswith("GEA, Betaalpas".casefold()):
@@ -301,8 +304,8 @@ class Transactie:
             if rij.omschrijving.casefold().startswith("BEA, Betaalpas".casefold()):
                 transactiemethode   =   "pinbetaling" 
             else:
-                transactiemethode   =   "pinbetaling" 
-                cat_uuid            =   "6507437f-f21a-4458-bbdd-1ed7c2f5cebd"
+                transactiemethode   =   "geldopname" 
+                cat_uuid            =   cls.config["geldopname"]["cat_uuid"]
             
             tijdelijk["naam"]       =   resultaat_pinpas.get("derde_naam")
         
@@ -338,7 +341,7 @@ class Transactie:
                 
                 transactiemethode       =   "betaalverzoek"
                 
-                bank_uuid               =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
+                bank_uuid               =   cls.config["betaalverzoek"]["bank_uuid"]
                 details["bank_uuid"]    =   bank_uuid
                 
                 patroon_tikkie          =   re.compile(r"(?i)^Tikkie ID (?:[0-9 ]+), ?(?P<betalingsomschrijving_tikkie>.+), ?Van ?(?P<derde_naam>[\w\s\.]+),? ?(?P<derde_iban>.*)?$")
@@ -474,8 +477,8 @@ class Transactie:
             
             transactiemethode   =   "bankkosten"
             
-            derde_uuid          =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
-            cat_uuid            =   "d188a43a-fb79-4a83-844d-6feb78855924"
+            derde_uuid          =   cls.config["bankkosten"]["derde_uuid"]
+            cat_uuid            =   cls.config["bankkosten"]["cat_uuid"]
             details["betalingsomschrijving"]    =   rij.omschrijving
         
         else:
@@ -485,16 +488,17 @@ class Transactie:
         if cat_uuid is None and "betalingsomschrijving" in details.keys():
             cat_uuid = cls.verwerken_cat_uuid(details.get("betalingsomschrijving"))
         
-        return cls(bedrag               =   bedrag,
-                   beginsaldo           =   beginsaldo,
-                   eindsaldo            =   eindsaldo,
-                   transactiemethode    =   transactiemethode,
-                   datumtijd            =   datumtijd,
-                   cat_uuid             =   cat_uuid,
-                   derde_uuid           =   derde_uuid,
-                   details              =   details,
-                   tijdelijk            =   tijdelijk,
-                   )
+        return cls(
+            bedrag               =   bedrag,
+            beginsaldo           =   beginsaldo,
+            eindsaldo            =   eindsaldo,
+            transactiemethode    =   transactiemethode,
+            datumtijd            =   datumtijd,
+            cat_uuid             =   cat_uuid,
+            derde_uuid           =   derde_uuid,
+            details              =   details,
+            tijdelijk            =   tijdelijk,
+            )
     
     @staticmethod
     def verwerken_derde_uuid(
@@ -510,7 +514,7 @@ class Transactie:
             for uuid_bankrekening, bankrekening in bankrekeningen.items():
                 if iban == bankrekening.get("iban", "dummy"):
                     derde_uuid  =   uuid_bankrekening
-                    cat_uuid    =   "1e8fd286-4cdd-4836-a1c5-7e815123ea25"
+                    cat_uuid    =   Transactie.config["interne overboeking"]["cat_uuid"]
                     return derde_uuid, cat_uuid
             
             for uuid_persoon, persoon in personen.items():
@@ -564,14 +568,14 @@ class Transactie:
         
         if "asn" in naam.casefold():
             
-            bank_uuid               =   "3de40e75-c036-41f5-9e6d-112ee6b26c93"
+            bank_uuid               =   Transactie.config["betaalverzoek"]["versturen"]["asn"]["bank_uuid"]
             derde_iban              =   iban_zoeker(betalingsomschrijving)
             derde_naam              =   betalingsomschrijving.split(" ",1)[0]
             betalingsomschrijving   =   betalingsomschrijving.split(f"{derde_iban}")[1].replace(f"{derde_iban}","").strip()
         
         elif "tikkie" in betalingsomschrijving.casefold() or "tikkie" in naam.casefold() or "abn amro" in naam.casefold():
             
-            bank_uuid               =   "7fe30da2-dfb9-4d07-8d85-6132cf0c8816"
+            bank_uuid               =   Transactie.config["betaalverzoek"]["versturen"]["tikkie"]["bank_uuid"]
             derde_iban              =   iban_zoeker(betalingsomschrijving)
             for aantal_spaties in range(betalingsomschrijving.count(" ")): # fix voor indien betalingskenmerk spaties bevat
                 if betalingskenmerk in betalingsomschrijving.replace(" ", "", aantal_spaties):
@@ -580,21 +584,21 @@ class Transactie:
         
         elif "rabo" in naam.casefold():
             
-            bank_uuid               =   "18e6fc70-35cd-4bc7-a713-29be66a177f1"
+            bank_uuid               =   Transactie.config["betaalverzoek"]["versturen"]["rabo"]["bank_uuid"]
             derde_iban              =   iban_zoeker(betalingsomschrijving)
             derde_naam              =   betalingsomschrijving.split(f"{betalingskenmerk}")[1].strip()
             betalingsomschrijving   =   ""
         
         elif "bunq" in betalingsomschrijving.casefold():
             
-            bank_uuid               =   "4d2d88d4-b8d3-46ca-85f4-55fa5b364bb3"
+            bank_uuid               =   Transactie.config["betaalverzoek"]["versturen"]["bunq"]["bank_uuid"]
             derde_iban              =   iban_zoeker(betalingsomschrijving)
             derde_naam              =   betalingsomschrijving.split(f"{derde_iban}")[1].split(f"{betalingskenmerk}")[0].strip()
             betalingsomschrijving   =   ""
         
         elif "ingb" in betalingsomschrijving.casefold():
         
-            bank_uuid               =   "cf541b4f-1fee-4562-a47b-2792d7ca42e6"
+            bank_uuid               =   Transactie.config["betaalverzoek"]["versturen"]["ingb"]["bank_uuid"]
             derde_iban              =   iban_zoeker(betalingsomschrijving)
             derde_naam              =   betalingsomschrijving.split(f"{derde_iban}")[0].strip()
             betalingsomschrijving   =   betalingsomschrijving.split(f"{betalingskenmerk}")[1].split("ING")[0].strip()
@@ -725,7 +729,7 @@ class Transactie:
                             print(f"\t       -> {"categorie":<31}{self.categorie().naam}")
                         elif veld == "derde_uuid":
                             print(f"\t       -> {"derde":<31}{self.derde().naam}")
-                            
+                
                 print("")
                 continue
             
