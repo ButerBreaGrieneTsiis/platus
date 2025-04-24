@@ -32,7 +32,7 @@ class Transactie:
         dagindex           : int    =   0,
         details            : dict   =   None,
         tijdelijk          : dict   =   None,
-    ):
+        ):
         
         assert eindsaldo == beginsaldo + bedrag
         
@@ -57,7 +57,21 @@ class Transactie:
         derde   =   self.derde()
         
         if self.transactiemethode == "pinbetaling" or self.transactiemethode == "geldopname":
-            lijn_derde  =   f"aan \"{derde.naam}\" per {self.transactiemethode} in {self.details["locatie"]} ({self.details["land"]})"
+            
+            locatie =   self.locatie()
+            land    =   self.land()
+            
+            if locatie is not None:
+                toon_locatie = locatie.naam
+            else:
+                toon_locatie = self.tijdelijk["locatie_oud"]
+                
+            if land is not None:
+                toon_land = land.naam
+            else:
+                toon_land = self.tijdelijk["land_oud"]
+            
+            lijn_derde  =   f"aan \"{derde.naam}\" per {self.transactiemethode} in {toon_locatie} ({toon_land})"
         elif self.transactiemethode == "bankkosten" or self.transactiemethode == "rente":
             lijn_derde  =   f"voor {self.transactiemethode}"
         else:
@@ -100,19 +114,19 @@ class Transactie:
             muntsoort     =   muntsoorten[valuta_iso]
             
             if muntsoort["ervoor"]:
-                return f"{muntsoort['symbool']}{' '*muntsoort['spatie']}{bedrag}"
+                return f"{muntsoort["symbool"]}{" "*muntsoort["spatie"]}{bedrag}"
             else:
-                return f"{bedrag}{' '*muntsoort['spatie']}{muntsoort['symbool']}"
+                return f"{bedrag}{" "*muntsoort["spatie"]}{muntsoort["symbool"]}"
         
         bedrag_euro         =   abs(self.bedrag / 100)
         
-        bedrag_euro_print   =   str(int(bedrag_euro))+",- " if bedrag_euro % 1 == 0 else f"{bedrag_euro:.2f}".replace('.',',')
+        bedrag_euro_print   =   str(int(bedrag_euro))+",- " if bedrag_euro % 1 == 0 else f"{bedrag_euro:.2f}".replace(".",",")
         regel_euro_print    =   toon_bedrag_iso(bedrag_euro_print, "eur")
         
         if "valuta_iso" in self.details.keys():
             
             bedrag_valuta       =   abs(self.details["valuta_bedrag"] / 100)
-            bedrag_valuta_print =   str(int(bedrag_valuta))+",- " if bedrag_valuta % 1 == 0 else f"{bedrag_valuta:.2f}".replace('.',',')
+            bedrag_valuta_print =   str(int(bedrag_valuta))+",- " if bedrag_valuta % 1 == 0 else f"{bedrag_valuta:.2f}".replace(".",",")
             regel_valuta_print  =   toon_bedrag_iso(bedrag_valuta_print, self.details["valuta_iso"])
             return f"{regel_euro_print} ({regel_valuta_print})"
         else:
@@ -176,17 +190,17 @@ class Transactie:
                     }
     
     def naar_tabel(
-            self,
-            personen        :   Dict[str, Persoon]          =   None,
-            bedrijven       :   Dict[str, Bedrijf]          =   None,
-            bankrekeningen  :   Dict[str, Any]              =   None,
-            banken          :   Dict[str, Bank]             =   None,
-            cpsps           :   Dict[str, Cpsp]             =   None,
-            categorieen     :   Dict[str, Categorie]        =   None,
-            hoofdcategorieen:   Dict[str, HoofdCategorie]   =   None,
-            locaties        :   Dict[str, Locatie]          =   None,
-            landen          :   Dict[str, Land]             =   None,
-            ) -> dict:
+        self,
+        personen        :   Dict[str, Persoon]          =   None,
+        bedrijven       :   Dict[str, Bedrijf]          =   None,
+        bankrekeningen  :   Dict[str, Any]              =   None,
+        banken          :   Dict[str, Bank]             =   None,
+        cpsps           :   Dict[str, Cpsp]             =   None,
+        categorieen     :   Dict[str, Categorie]        =   None,
+        hoofdcategorieen:   Dict[str, HoofdCategorie]   =   None,
+        locaties        :   Dict[str, Locatie]          =   None,
+        landen          :   Dict[str, Land]             =   None,
+        ) -> Dict[str, Any]:
         
         personen            =   personen            if personen         is not None else open_json("gegevens\\derden",          "persoon",          "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
         bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden",          "bedrijf",          "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
@@ -198,41 +212,46 @@ class Transactie:
         locaties            =   locaties            if locaties         is not None else open_json("gegevens\\configuratie",    "locatie",          "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
         landen              =   landen              if landen           is not None else open_json("gegevens\\configuratie",    "land",             "json", class_mapper = (Land, frozenset(("naam", "iso_3166_1_alpha_3", "synoniemen")), "van_json"),)
         
-        derde   =   self.derde(
-                        personen,
-                        bedrijven,
-                        bankrekeningen,
-                        banken,
-                        cpsps,
-                    )
+        derde = self.derde(
+            personen,
+            bedrijven,
+            bankrekeningen,
+            banken,
+            cpsps,
+            )
+        
+        locatie = self.locatie(
+            locaties,
+        )
+        
+        land = self.land(
+            locaties,
+            land,
+        )
         
         return {
-                "index":                self.index,
-                "bedrag":               self.bedrag / 100,
-                "bedrag_abs":           abs(self.bedrag / 100),
-                "beginsaldo":           self.beginsaldo / 100,
-                "eindsaldo":            self.eindsaldo / 100,
-                "transactiemethode":    self.transactiemethode,
-                "datumtijd":            self.datumtijd,
-                "dagindex":             self.dagindex,
-                "hoofdcategorie":       self.hoofdcategorie(categorieen, hoofdcategorieen).naam,
-                "categorie":            self.categorie(categorieen).naam,
-                "derde":                derde["naam"]  if isinstance(derde, dict) else derde.naam,
-                "type":                 "bankrekening" if isinstance(derde, dict) else derde.type,
-                "locatie":              locaties[self.details["locatie_uuid"]].naam if "locatie_uuid" in self.details.keys() else None,
-                "breedtegraad":         locaties[self.details["locatie_uuid"]].breedtegraad if "locatie_uuid" in self.details.keys() else None,
-                "lengtegraad":          locaties[self.details["locatie_uuid"]].lengtegraad if "locatie_uuid" in self.details.keys() else None,
-                "land":                 landen[locaties[self.details["locatie_uuid"]].land_uuid].naam if "locatie_uuid" in self.details.keys() else None,
-                "pasnummer":            self.details["pasnummer"] if "pasnummer" in self.details.keys() else None,
-                }
+            "index":                self.index,
+            "bedrag":               self.bedrag / 100,
+            "bedrag_abs":           abs(self.bedrag / 100),
+            "beginsaldo":           self.beginsaldo / 100,
+            "eindsaldo":            self.eindsaldo / 100,
+            "transactiemethode":    self.transactiemethode,
+            "datumtijd":            self.datumtijd,
+            "hoofdcategorie":       self.hoofdcategorie(categorieen, hoofdcategorieen).naam,
+            "categorie":            self.categorie(categorieen).naam,
+            "derde":                derde["naam"]  if isinstance(derde, dict) else derde.naam,
+            "type":                 "bankrekening" if isinstance(derde, dict) else derde.type,
+            "locatie":              locatie.naam if locatie is not None else None,
+            "breedtegraad":         locatie.breedtegraad if locatie is not None else None,
+            "lengtegraad":          locatie.lengtegraad if locatie is not None else None,
+            "land":                 land.naam if land is not None else None,
+            }
     
     @classmethod
     def van_bankexport(
         cls, 
         rij: pd.core.series.Series,
-    ):
-        
-        rekeningnummer  =   str(rij.rekeningnummer)
+        ):
         
         if rij.muntsoort.casefold() != "eur":
             raise NotImplementedError
@@ -264,14 +283,22 @@ class Transactie:
             
             if "land:" in resultaat_pinpas.get("locatie"):
                 if ", land:" in resultaat_pinpas.get("locatie"):
-                    details["land"]     =   cls.verwerken_land(resultaat_pinpas.get("locatie").split(", land:")[1].strip())
-                    details["locatie"]  =   cls.verwerken_locatie(resultaat_pinpas.get("locatie").split(", land:")[0].strip())
+                    locatie_oud     =   resultaat_pinpas.get("locatie").split(", land:")[0].strip()
+                    land_oud        =   resultaat_pinpas.get("locatie").split(", land:")[1].strip()
                 else:
-                    details["land"]     =   cls.verwerken_land(resultaat_pinpas.get("locatie").split("land:")[1].strip())
-                    details["locatie"]  =   cls.verwerken_locatie(resultaat_pinpas.get("locatie").split("land:")[0].strip())
+                    locatie_oud     =   resultaat_pinpas.get("locatie").split("land:")[0].strip()
+                    land_oud        =   resultaat_pinpas.get("locatie").split("land:")[1].strip()
             else:
-                details["land"]         =   "Nederland"
-                details["locatie"]      =   cls.verwerken_locatie(resultaat_pinpas.get("locatie").strip())
+                locatie_oud         =   locatie = resultaat_pinpas.get("locatie").strip()
+                land_oud            =   "Nederland"
+            
+            details["locatie_uuid"] =   cls.verwerken_locatie(
+                locatie_oud = locatie_oud,
+                land_oud = land_oud,
+                )
+            
+            tijdelijk["locatie_oud"]    =   locatie_oud
+            tijdelijk["land_oud"]       =   land_oud
             
             derde_uuid, cat_uuid    =   cls.verwerken_derde_uuid(naam = resultaat_pinpas.get("derde_naam"))
             
@@ -477,7 +504,7 @@ class Transactie:
     def verwerken_derde_uuid(
         iban: str = "",
         naam: str = "",
-    ) -> Tuple[str | None, str | None]:
+        ) -> Tuple[str | None, str | None]:
         
         personen                =   open_json("gegevens\\derden", "persoon",        "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
         bedrijven               =   open_json("gegevens\\derden", "bedrijf",        "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
@@ -517,7 +544,7 @@ class Transactie:
     def verwerken_cpsp_uuid(
         naam: str,
         iban: str,
-    ) -> str | None:
+        ) -> str | None:
         
         cpsps   =   open_json("gegevens\\derden", "cpsp", "json", class_mapper = (Cpsp, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten",)), "van_json"),)
         
@@ -535,7 +562,7 @@ class Transactie:
         betalingsomschrijving: str, 
         betalingskenmerk: str, 
         bank_iban: str,
-    ) -> Tuple[str, str ,str ,str]:
+        ) -> Tuple[str, str ,str ,str]:
         
         banken   =   open_json("gegevens\\derden", "bank", "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
         
@@ -583,41 +610,33 @@ class Transactie:
         return bank_uuid, derde_iban, derde_naam, betalingsomschrijving
     
     @staticmethod
-    def verwerken_locatie(locatie_oud: str) -> str:
+    def verwerken_locatie(
+        locatie_oud: str,
+        land_oud: str,
+        ) -> str:
         
-        locatiebestand  =   open_json("gegevens\\configuratie", "locatie", "json")
-        return next((locatie for locatie, synoniemen in locatiebestand.items() for synoniem in synoniemen if synoniem == locatie_oud.casefold()), locatie_oud.capitalize())
-    
+        locaties    =   open_json("gegevens\\configuratie", "locatie", "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
+        landen      =   open_json("gegevens\\configuratie", "land",    "json", class_mapper = (Land, frozenset(("naam", "iso_3166_1_alpha_3", "synoniemen")), "van_json"),)
+        
+        locaties_mogelijk = []
+        
+        for locatie_uuid, locatie in locaties.items():
+            if any(locatie_oud.casefold() == synoniem for synoniem in locatie.synoniemen) or locatie_oud.casefold() == locatie.naam.casefold():
+                if any(land_oud.casefold() == synoniem for synoniem in landen[locatie.land_uuid].synoniemen) or land_oud.casefold() == landen[locatie.land_uuid].naam.casefold():
+                    locaties_mogelijk.append(locatie_uuid)
+        
+        if len(locaties_mogelijk) == 1:
+            return locaties_mogelijk[0]
+        elif len(locaties_mogelijk) > 1:
+            [print(locaties[locatie_uuid]) for locatie_uuid in locaties_mogelijk]
+            raise NotImplementedError
+        else:
+            return None
+        
     @staticmethod
-    def verwerken_land(land_oud: str) -> str:
-        
-        if land_oud != "Nederland" and land_oud is not None:
-            
-            landenbestand   =   open_json("gegevens\\configuratie", "land", "json")
-            
-            if any([afkorting == land_oud.casefold() for afkortingen in landenbestand.values() for afkorting in afkortingen]):
-                return next(land for land, afkortingen in landenbestand.items() for afkorting in afkortingen in afkorting == land_oud.casefold())
-            else:
-                print(f"\nHet land met de afkorting \"{land_oud}\" komt niet voor in het landenbestand.")
-                print("Geef de volledige naam op van het land om toe te voegen.")
-                
-                invoer_land    =   invoer_validatie("land", str, valideren = True)
-                
-                if any([invoer_land == land for land in landenbestand.keys()]):
-                    landenbestand[invoer_land]["afkortingen"].append(land_oud.casefold())
-                    print(f"De afkorting \"{land_oud.casefold()}\" is toegevoegd aan het land \"{invoer_land}\"")
-                else:
-                    landenbestand[invoer_land] = [land_oud.casefold()]
-                    print(f"Het land {invoer_land} is toegevoegd, alsmede de afkorting \"{land_oud.casefold()}\"\n")
-                
-                opslaan_json(landenbestand, "gegevens\\configuratie", "land", "json")
-                
-                return invoer_land
-        
-        return land_oud
-    
-    @staticmethod
-    def verwerken_cat_uuid(betalingsomschrijving: str) -> str:
+    def verwerken_cat_uuid(
+        betalingsomschrijving: str,
+        ) -> str:
         
         categorieen     =   open_json("gegevens\\configuratie", "categorie", "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
         
@@ -633,14 +652,14 @@ class Transactie:
         datumtijd: dt.datetime.date,
         details: dict,
         bedrag: int,
-    ) -> Dict[str, int]:
+        ) -> Dict[str, int]:
         
         inkomen_json    =   open_json("gegevens\\configuratie", "inkomen", "json")
         
         if derde_uuid in inkomen_json.keys():
             
             inkomen         =   inkomen_json[derde_uuid]
-            salarisstrook   =   open_json(f"{inkomen['pad']}", dt.datetime.strftime(datumtijd, "%Y-%m"), "json")
+            salarisstrook   =   open_json(f"{inkomen["pad"]}", dt.datetime.strftime(datumtijd, "%Y-%m"), "json")
             
             if int(round(100 * salarisstrook["netPay"]["value"])) == bedrag:
                 
@@ -683,7 +702,7 @@ class Transactie:
                     continue
             
             elif opdracht.get("opdracht") == "velden":
-                print(f"\n\t{'INDEX':<6}{'VELD':<35}WAARDE")
+                print(f"\n\t{"INDEX":<6}{"VELD":<35}WAARDE")
                 for iveld, (veld, waarde) in enumerate(self.__dict__.items()):
                     if isinstance(waarde, dict):
                         print(f"\t{iveld:<6}{veld:<35}")
@@ -697,16 +716,19 @@ class Transactie:
                             else:
                                 print(f"\t       -> {subveld:<31}{subwaarde}")
                                 if subveld == "cpsp_uuid":
-                                    print(f"\t           -> {'medium':<27}{self.medium().naam}")
+                                    print(f"\t           -> {"medium":<27}{self.medium().naam}")
                                 elif subveld == "bank_uuid":
-                                    print(f"\t           -> {'bank':<27}{self.bank().naam}")
+                                    print(f"\t           -> {"bank":<27}{self.bank().naam}")
+                                elif subveld == "locatie_uuid":
+                                    print(f"\t           -> {"locatie":<27}{self.locatie().naam}")
+                                    print(f"\t           -> {"land":<27}{self.land().naam}")
                     else:
                         print(f"\t{iveld:<6}{veld:<35}{waarde}")
                         if veld == "cat_uuid":
-                            print(f"\t       -> {'hoofdcategorie':<31}{self.hoofdcategorie.naam}")
-                            print(f"\t       -> {'categorie':<31}{self.categorie.naam}")
+                            print(f"\t       -> {"hoofdcategorie":<31}{self.hoofdcategorie().naam}")
+                            print(f"\t       -> {"categorie":<31}{self.categorie().naam}")
                         elif veld == "derde_uuid":
-                            print(f"\t       -> {'derde':<31}{self.derde().naam}")
+                            print(f"\t       -> {"derde":<31}{self.derde().naam}")
                             
                 print("")
                 continue
@@ -730,7 +752,7 @@ class Transactie:
                     else:
                         categorieen[self.cat_uuid].trefwoorden.append(invoer_trefwoord.casefold())
                         opslaan_json(categorieen, "gegevens\\configuratie", "categorie", "json", {"Categorie": "naar_json"})
-                        print(f"het trefwoord \"{invoer_trefwoord.casefold()}\" is toegevoegd aan de categorie \"{self.categorie.naam} ({self.hoofdcategorie.naam})\"")
+                        print(f"het trefwoord \"{invoer_trefwoord.casefold()}\" is toegevoegd aan de categorie \"{self.categorie().naam} ({self.hoofdcategorie().naam})\"")
                         continue
                 else:
                     print("vul een trefwoord in")
@@ -748,16 +770,13 @@ class Transactie:
                     self.bewerken("cat_uuid")
                     continue
                 elif opdracht.get("veld").casefold().startswith("loc"):
-                    self.bewerken("locatie")
-                    continue
-                elif opdracht.get("veld").casefold() == "land":
-                    self.bewerken("land")
+                    self.bewerken("locatie_uuid")
                     continue
                 elif opdracht.get("veld").casefold().startswith("opm"):
                     self.bewerken("opmerking")
                     continue
                 else:
-                    print(f"veld \"{opdracht.get('veld').casefold()}\" niet herkend")
+                    print(f"veld \"{opdracht.get("veld").casefold()}\" niet herkend")
                     continue
     
     def aanvullen(self):
@@ -767,7 +786,10 @@ class Transactie:
         
         if self.cat_uuid is None:
             self.bewerken("cat_uuid")
-    
+            
+        if self.details.get("locatie_uuid", ...) is None:
+            self.bewerken("locatie_uuid")
+        
     def bewerken(
         self,
         veld: str,
@@ -777,7 +799,7 @@ class Transactie:
             
             if self.derde_uuid == None:
                 if "naam" in self.tijdelijk.keys():
-                    print(f"derde \"{self.tijdelijk.get('naam')}\" niet automatisch toegewezen, kies een bestaande of maak een nieuwe")
+                    print(f"derde \"{self.tijdelijk.get("naam")}\" niet automatisch toegewezen, kies een bestaande of maak een nieuwe")
                 else:
                     print("derde niet automatisch toegewezen, kies een bestaande of maak een nieuwe")
             
@@ -838,7 +860,7 @@ class Transactie:
                                 bedrijven_match_uuid.append(bedrijf_uuid)
                         
                         if len(bedrijven_match_uuid) == 0:
-                            print(f"geen bedrijven gevonden voor zoekterm \"{opdracht.get('zoekterm')}\"")
+                            print(f"geen bedrijven gevonden voor zoekterm \"{opdracht.get("zoekterm")}\"")
                             continue
                         
                         uuid    =   invoer_kiezen("bedrijf", {bedrijven[bedrijf_match_uuid].naam: bedrijf_match_uuid for bedrijf_match_uuid in bedrijven_match_uuid}, stoppen = True)
@@ -852,7 +874,7 @@ class Transactie:
                             bedrijven[uuid].iban.append(self.tijdelijk.get("derde_iban"))
                         if bedrijven[uuid].cat_uuid is not None:
                             self.cat_uuid = bedrijven[uuid].cat_uuid
-                            print(f"categorie veranderd naar \"{self.categorie.naam} ({self.hoofdcategorie.naam})\"")
+                            print(f"categorie veranderd naar \"{self.categorie().naam} ({self.hoofdcategorie().naam})\"")
                         opslaan_json(bedrijven, "gegevens\\derden", "bedrijf", "json", {"Bedrijf": "naar_json"})
                         break
                         
@@ -864,7 +886,7 @@ class Transactie:
                                 personen_match_uuid.append(persoon_uuid)
                         
                         if len(personen_match_uuid) == 0:
-                            print(f"geen personen gevonden voor zoekterm \"{opdracht.get('zoekterm')}\"")
+                            print(f"geen personen gevonden voor zoekterm \"{opdracht.get("zoekterm")}\"")
                             continue
                         
                         uuid    =   invoer_kiezen("persoon", {personen[persoon_match_uuid].naam: persoon_match_uuid for persoon_match_uuid in personen_match_uuid}, stoppen = True)
@@ -930,7 +952,7 @@ class Transactie:
             bedrijven       =   open_json("gegevens\\derden", "bedrijf", "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
             if self.derde_uuid in bedrijven.keys():
                 if not bedrijven[self.derde_uuid].uitsluiten and bedrijven[self.derde_uuid].cat_uuid is None:
-                    print(f"toevoegen categorie \"{self.categorie.naam} ({self.hoofdcategorie.naam})\" aan bedrijf \"{bedrijven[self.derde_uuid].naam}\"?")
+                    print(f"toevoegen categorie \"{self.categorie().naam} ({self.hoofdcategorie().naam})\" aan bedrijf \"{bedrijven[self.derde_uuid].naam}\"?")
                     toevoegen   =   invoer_kiezen("toevoegen aan derde", ["ja", "nee", "uitsluiten"])
                     if toevoegen == "ja":
                         bedrijven[self.derde_uuid].cat_uuid     =   cat_uuid
@@ -943,56 +965,179 @@ class Transactie:
             opmerking   =   invoer_validatie("opmerking", str)
             self.details["opmerking"]   =   opmerking
         
-        elif veld == "locatie":
+        elif veld == "locatie_uuid":
             
-            if "locatie" in self.details.keys():
+            if "locatie_uuid" in self.details.keys():
                 
-                locatie_nieuw   =   invoer_validatie("locatie", str, valideren =  True)
-                if self.details["locatie"] != locatie_nieuw:
-                    toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
-                    if toevoegen == "ja":
-                        locatie_oud     =   self.details["locatie"]
-                        locatiebestand  =   open_json("gegevens\\configuratie", "locatie", "json")
-                        if any([locatie_nieuw.casefold() == locatie.casefold() for locatie in locatiebestand.keys()]):
-                            locatiebestand[locatie_nieuw].append(locatie_oud)
+                locaties    =   open_json("gegevens\\configuratie", "locatie", "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
+                landen      =   open_json("gegevens\\configuratie", "land",    "json", class_mapper = (Land, frozenset(("naam", "iso_3166_1_alpha_3", "synoniemen")), "van_json"),)
+                
+                if self.details.get("locatie_uuid") is None:
+                        print(f"geen automatische locatie toegekend voor locatie \"{self.tijdelijk["locatie_oud"]}\", land \"{self.tijdelijk["land_oud"]}\"")
+                
+                while True:
+                    
+                    print(f"kies een bestaande locatie met \"zoek <zoekterm>\" of een nieuwe met \"nieuw\"")
+                    opdracht = invoer_validatie("opdracht", str, regex = r"(?i)^(?P<opdracht>nieuw|zoek)(\s+(?P<zoekterm>.*))?$")
+                    
+                    if opdracht.get("opdracht") == "nieuw":
+                        
+                        uuid            =   str(uuid4())
+                        naam            =   invoer_validatie("locatie", str, valideren =  True)
+                        
+                        for land_uuid, land in landen.items():
+                            if self.tijdelijk["land_oud"].casefold() == land.naam.casefold() or any(self.tijdelijk["land_oud"].casefold() == synoniem for synoniem in land.synoniemen):
+                                break
                         else:
-                            locatiebestand[locatie_nieuw]   =   [locatie_oud]
+                            print(f"geen automatische land toegekend voor land \"{self.tijdelijk["land_oud"]}\"")
+                            while True:
+                                print(f"kies een bestaande locatie met \"zoek <zoekterm>\" of een nieuwe met \"nieuw\"")
+                                opdracht = invoer_validatie("opdracht", str, regex = r"(?i)^(?P<opdracht>nieuw|zoek)(\s+(?P<zoekterm>.*))?$")
+                                
+                                if opdracht.get("opdracht") == "nieuw":
+                                    raise NotImplementedError
+                                
+                                else:
+                                    if opdracht.get("zoekterm").strip() == "":
+                                        continue
+                                    
+                                    landen_uuid_overeenkomst = []
+                                    
+                                    for land_uuid, land in landen.items():
+                                        if opdracht.get("zoekterm").casefold() in land.naam.casefold() or any(opdracht.get("zoekterm").casefold() in synoniem for synoniem in land.synoniemen):
+                                            landen_uuid_overeenkomst.append(land_uuid)
+                                    
+                                    if len(landen_uuid_overeenkomst) == 0:
+                                        print(f"geen landen gevonden voor zoekterm \"{opdracht.get("zoekterm")}\"")
+                                        continue
+                                    
+                                    land_uuid = invoer_kiezen("land", {landen[land_uuid_overeenkomst].naam: land_uuid_overeenkomst for land_uuid_overeenkomst in landen_uuid_overeenkomst}, stoppen = True)
+                                    
+                                    if not bool(land_uuid):
+                                        continue
+                                    
+                                    print(f"land veranderd naar \"{landen[land_uuid].naam}\"")
+                                    
+                                    landen[land_uuid].synoniemen.append(self.tijdelijk["land_oud"].casefold())
+                                    opslaan_json(landen, "gegevens\\configuratie", "land", "json")
+                                    break
                         
-                        opslaan_json(locatiebestand, "gegevens\\configuratie", "locatie", "json")
+                        breedtegraad    =   invoer_validatie("breedtegraad", float, valideren = True)
+                        lengtegraad     =   invoer_validatie("lengtegraad", float, valideren = True)
                         
-                    self.details["locatie"]     =   locatie_nieuw
-                
+                        print(f"toevoegen synoniemn \"{self.tijdelijk["locatie_oud"]}\" aan locatie \"{naam}\"?")
+                        if invoer_kiezen("keuze", {"ja": True, "nee": False}):
+                            locatie = Locatie(
+                                naam,
+                                land_uuid,
+                                breedtegraad,
+                                lengtegraad,
+                                [self.tijdelijk["locatie_oud"].casefold()]
+                                )
+                        else:
+                            locatie = Locatie(
+                                naam,
+                                land_uuid,
+                                breedtegraad,
+                                lengtegraad,
+                                )
+                        
+                        locaties[uuid] = locatie
+                        opslaan_json(locaties, "gegevens\\configuratie", "locatie", "json")
+                    
+                    elif opdracht.get("opdracht") == "zoek":
+                        
+                        if opdracht.get("zoekterm").strip() == "":
+                            continue
+                        
+                        locaties_uuid_overeenkomst = []
+                        
+                        for locatie_uuid, locatie in locaties.items():
+                            if opdracht.get("zoekterm").casefold() in locatie.naam.casefold() or any(opdracht.get("zoekterm").casefold() in synoniem for synoniem in locatie.synoniemen):
+                                locaties_uuid_overeenkomst.append(locatie_uuid)
+                        
+                        if len(locaties_uuid_overeenkomst) == 0:
+                            print(f"geen locaties gevonden voor zoekterm \"{opdracht.get("zoekterm")}\"")
+                            continue
+                        
+                        locatie_uuid = invoer_kiezen("locatie", {locaties[locatie_uuid_overeenkomst].naam: locatie_uuid_overeenkomst for locatie_uuid_overeenkomst in locaties_uuid_overeenkomst}, stoppen = True)
+                        
+                        if not bool(locatie_uuid):
+                            continue
+                        
+                        self.details["locatie_uuid"]    =   locatie_uuid
+                        print(f"locatie veranderd naar \"{locaties[locatie_uuid].naam} ({landen[locaties[locatie_uuid].land_uuid].naam})\"")
+                        
+                        if self.tijdelijk["locatie_oud"].casefold() not in locaties[locatie_uuid].synoniemen:
+                            print(f"toevoegen synoniemn \"{self.tijdelijk["locatie_oud"]}\" aan locatie \"{locaties[locatie_uuid].naam}\"?")
+                            if invoer_kiezen("keuze", {"ja": True, "nee": False}):
+                                locaties[locatie_uuid].synoniemen.append(self.tijdelijk["locatie_oud"].casefold())
+                            
+                        if self.tijdelijk["land_oud"].casefold() != landen[locaties[locatie_uuid].land_uuid].naam.casefold() and self.tijdelijk["land_oud"].casefold() not in landen[locaties[locatie_uuid].land_uuid].synoniemen:
+                            landen[locaties[locatie_uuid].land_uuid].synoniemen.append(self.tijdelijk["land_oud"].casefold())
+                        
+                        opslaan_json(locaties, "gegevens\\configuratie", "locatie", "json")
+                        opslaan_json(landen, "gegevens\\configuratie", "land", "json")
+                        break
+            
             else:
                 print("deze transatie bevat geen locatie")
             
-        elif veld == "land":
             
-            if "land" in self.details.keys():
+            
+            
+            
+        
+        # elif veld == "locatie":
+            
+        #     if "locatie" in self.details.keys():
                 
-                land_nieuw      =   invoer_validatie("land", str, valideren =  True)
-                if self.details["land"] != land_nieuw:
-                    toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
-                    if toevoegen == "ja":
-                        land_oud        =   self.details["land"]
-                        landenbestand   =   open_json("gegevens\\configuratie", "land", "json")
-                        if any([land_nieuw.casefold() == land.casefold() for land in landenbestand.keys()]):
-                            landenbestand[land_nieuw].append(land_oud)
-                        else:
-                            landenbestand[land_nieuw]   =   [land_oud]
+        #         locatie_nieuw   =   invoer_validatie("locatie", str, valideren =  True)
+        #         if self.details["locatie"] != locatie_nieuw:
+        #             toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
+        #             if toevoegen == "ja":
+        #                 locatie_oud     =   self.details["locatie"]
+        #                 locatiebestand  =   open_json("gegevens\\configuratie", "locatie", "json")
+        #                 if any([locatie_nieuw.casefold() == locatie.casefold() for locatie in locatiebestand.keys()]):
+        #                     locatiebestand[locatie_nieuw].append(locatie_oud)
+        #                 else:
+        #                     locatiebestand[locatie_nieuw]   =   [locatie_oud]
                         
-                        opslaan_json(landenbestand, "gegevens\\configuratie", "land", "json")
+        #                 opslaan_json(locatiebestand, "gegevens\\configuratie", "locatie", "json")
                         
-                    self.details["land"]     =   land_nieuw
+        #             self.details["locatie"]     =   locatie_nieuw
                 
-            else:
-                print("deze transatie bevat geen land")
+        #     else:
+        #         print("deze transatie bevat geen locatie")
+            
+        # elif veld == "land":
+            
+        #     if "land" in self.details.keys():
+                
+        #         land_nieuw      =   invoer_validatie("land", str, valideren =  True)
+        #         if self.details["land"] != land_nieuw:
+        #             toevoegen       =   invoer_kiezen("optie, toevoegen hernoeminstructie", ["ja", "nee"])
+        #             if toevoegen == "ja":
+        #                 land_oud        =   self.details["land"]
+        #                 landenbestand   =   open_json("gegevens\\configuratie", "land", "json")
+        #                 if any([land_nieuw.casefold() == land.casefold() for land in landenbestand.keys()]):
+        #                     landenbestand[land_nieuw].append(land_oud)
+        #                 else:
+        #                     landenbestand[land_nieuw]   =   [land_oud]
+                        
+        #                 opslaan_json(landenbestand, "gegevens\\configuratie", "land", "json")
+                        
+        #             self.details["land"]     =   land_nieuw
+                
+        #     else:
+        #         print("deze transatie bevat geen land")
         
         return self
     
     def categorie(
         self,
         categorieen     :   Dict[str, Categorie]        = None,
-    ) -> Categorie:
+        ) -> Categorie:
         
         categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie", "categorie", "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
         return categorieen.get(self.cat_uuid)
@@ -1001,11 +1146,31 @@ class Transactie:
         self,
         categorieen     :   Dict[str, Categorie]        = None,
         hoofdcategorieen:   Dict[str, HoofdCategorie]   = None,
-    ) -> HoofdCategorie:
+        ) -> HoofdCategorie:
         
         categorieen         =   categorieen         if categorieen      is not None else open_json("gegevens\\configuratie", "categorie", "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "bedrijven", "trefwoorden",)), "van_json"),)
         hoofdcategorieen    =   hoofdcategorieen    if hoofdcategorieen is not None else open_json("gegevens\\configuratie", "hoofdcategorie", "json", class_mapper = (HoofdCategorie, frozenset(("naam", "type")), "van_json"),)
         return hoofdcategorieen.get(self.categorie(categorieen).hoofdcat_uuid)
+    
+    def locatie(
+        self,
+        locaties:   Dict[str, Locatie]  = None,
+        ) -> Locatie:
+        
+        locaties    =   locaties if locaties is not None else open_json("gegevens\\configuratie", "locatie", "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
+        
+        return locaties.get(self.details["locatie_uuid"]) if self.details.get("locatie_uuid", None) is not None else None
+    
+    def land(
+        self,
+        locaties:   Dict[str, Locatie]  = None,
+        landen  :   Dict[str, Land]     = None,
+        ) -> Land:
+        
+        locaties    =   locaties if locaties is not None else open_json("gegevens\\configuratie", "locatie", "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
+        landen      =   landen   if landen   is not None else open_json("gegevens\\configuratie", "land",    "json", class_mapper = (Land, frozenset(("naam", "iso_3166_1_alpha_3", "synoniemen")), "van_json"),)
+        
+        return landen[locaties.get(self.details["locatie_uuid"]).land_uuid] if self.details.get("locatie_uuid", None) is not None else None
     
     def derde(
         self,
@@ -1014,7 +1179,7 @@ class Transactie:
         bankrekeningen  :   Dict[str, Any]              =   None,
         banken          :   Dict[str, Bank]             =   None,
         cpsps           :   Dict[str, Cpsp]             =   None,
-    ) -> Persoon | Bedrijf | Bank | Cpsp:
+        ) -> Persoon | Bedrijf | Dict | Bank | Cpsp:
         
         personen            =   personen            if personen         is not None else open_json("gegevens\\derden",          "persoon",      "json", class_mapper = (Persoon, frozenset(("naam", "iban", "rekeningnummer", "giro", "groep",)), "van_json"),)
         bedrijven           =   bedrijven           if bedrijven        is not None else open_json("gegevens\\derden",          "bedrijf",      "json", class_mapper = (Bedrijf, frozenset(("naam", "iban", "rekeningnummer", "giro", "synoniemen", "uitsluiten", "cat_uuid",)), "van_json"),)
@@ -1060,7 +1225,7 @@ class Rekening:
         transacties         :   dict                =   None,
         actief              :   bool                =   True,
         actief_tot          :   dt.datetime         =   None,
-    ) -> "Rekening":
+        ) -> "Rekening":
         
         self.naam               =   naam
         self.uuid               =   uuid
@@ -1071,6 +1236,9 @@ class Rekening:
     
     def opslaan(self):
         opslaan_json(self.transacties, "gegevens\\rekeningen", self.uuid, "json", {"Transactie": "naar_json"})
+    
+    def backup(self):
+        opslaan_json(self.transacties, "gegevens\\rekeningen", f"{dt.datetime.strftime(dt.datetime.today(), "%Y-%m-%d")} - {self.uuid}", "json", {"Transactie": "naar_json"})
     
     @property
     def transactie_lijst(self) -> List[Transactie]:
@@ -1102,7 +1270,6 @@ class Rekening:
             landen,
         ) for transactie in self.transactie_lijst] if transactie_rij is not None])
         
-
 class Bankrekening(Rekening): 
     
     def __init__(
@@ -1117,7 +1284,7 @@ class Bankrekening(Rekening):
         transacties        :   dict        =   None,
         actief             :   bool        =   True,
         actief_tot         :   dt.datetime =   None,
-    ):
+        ):
         
         super().__init__(
             naam            =   naam,
@@ -1126,7 +1293,7 @@ class Bankrekening(Rekening):
             transacties     =   transacties,
             actief          =   actief,
             actief_tot      =   actief_tot,
-        )
+            )
         
         self.bank_uuid          =   bank_uuid
         self.pad                =   pad
@@ -1137,7 +1304,7 @@ class Bankrekening(Rekening):
     def openen(
         cls,
         bankrekening_uuid  :   str,
-    ):
+        ):
         
         eigen_bankrekeningen        =   open_json("gegevens\\configuratie", "bankrekening", "json")
         
@@ -1164,7 +1331,7 @@ class Bankrekening(Rekening):
         self,
         jaar : int,
         maand : int,
-    ):
+        ):
         
         bankexport          =   pd.read_excel(f"{self.pad}\\digitaal\\{jaar}-{maand:02}.xlsx")
         bankexport.columns  =   [col.casefold() for col in bankexport.columns]
@@ -1183,9 +1350,9 @@ class Bankrekening(Rekening):
         return banken[self.bank_uuid]
     
     def toevoegen_transactie(
-            self,
-            transactie : Transactie,
-            ):
+        self,
+        transactie : Transactie,
+        ):
         
         if not transactie.beginsaldo == self.transactie_lijst[-1].eindsaldo:
             raise ValueError(f"beginsaldo {transactie.beginsaldo} moet gelijk zijn aan eindsaldo laatste transactie {self.transactie_lijst[-1].eindsaldo}")
@@ -1210,15 +1377,15 @@ class Bankrekening(Rekening):
 class Lening(Rekening):
     
     def __init__(
-            self,
-            naam                :   str,
-            schuldeiser_uuid    :   str,
-            uuid                :   str,
-            actief_van          :   dt.datetime, 
-            transacties         :   dict                =   None,
-            actief              :   bool                =   True,
-            actief_tot          :   dt.datetime         =   None,
-            rente               :   Dict[str, float]    =   None,
+        self,
+        naam                :   str,
+        schuldeiser_uuid    :   str,
+        uuid                :   str,
+        actief_van          :   dt.datetime, 
+        transacties         :   dict                =   None,
+        actief              :   bool                =   True,
+        actief_tot          :   dt.datetime         =   None,
+        rente               :   Dict[str, float]    =   None,
         ):
             
             super().__init__(
@@ -1228,15 +1395,15 @@ class Lening(Rekening):
                 transacties     =   transacties,
                 actief          =   actief,
                 actief_tot      =   actief_tot,
-            )
+                )
             
             self.schuldeiser_uuid   =   schuldeiser_uuid
             self.rente              =   rente
     
     @classmethod
     def openen(cls,
-               lening_uuid      :   str,
-               ):
+        lening_uuid      :   str,
+        ):
         
         leningen    =   open_json("gegevens\\configuratie", "lening", "json")
         
