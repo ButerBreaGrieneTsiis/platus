@@ -12,7 +12,7 @@ def verwerken_maand():
     bankrekening    =   Bankrekening.openen(bankrekening_uuid)
     
     jaar    =   invoer_validatie("jaar", int, bereik = (1998, dt.datetime.now().year))
-    maand   =   invoer_validatie("maand", int, bereik = (1, dt.datetime.now().month-1) if jaar == dt.datetime.now().year else (1, 12))
+    maand   =   invoer_validatie("maand", int, bereik = (1, dt.datetime.now().month) if jaar == dt.datetime.now().year else (1, 12))
     
     bankrekening.verwerken_maand(jaar, maand)
     bankrekening.opslaan()
