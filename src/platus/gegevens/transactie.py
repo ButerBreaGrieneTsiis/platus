@@ -220,7 +220,7 @@ class Transactie:
         
         land = self.land(
             locaties,
-            land,
+            landen,
             )
         
         return {
