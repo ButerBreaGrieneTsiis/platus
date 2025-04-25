@@ -108,6 +108,82 @@ def rapporteren():
     betaalrekening_inkomsten_categorie = betaalrekening_inkomsten_categorie.sort_values(by = ["jaar"], ascending = False)
     kolommen_gesorteerd_inkomsten_categorie = betaalrekening_inkomsten_categorie.columns[betaalrekening_inkomsten_categorie.loc["totaal"].argsort()[::-1]]
     
+    betaalrekening_inkomsten_bedrijf = betaalrekening[
+        (betaalrekening["bedrag"] > 0.0)
+        & (betaalrekening["categorie"] != "interne overboeking")
+        & (betaalrekening["type"] == "bedrijf")
+    ].pivot_table(
+        "bedrag",
+        ["jaar", "derde"],
+        aggfunc = "sum",
+    ).reset_index(
+    ).pivot(
+        index = "jaar",
+        columns = "derde",
+        values = "bedrag",
+    )
+    betaalrekening_inkomsten_bedrijf["totaal"] = betaalrekening_inkomsten_bedrijf.sum(axis = 1)
+    betaalrekening_inkomsten_bedrijf.loc["totaal"] = betaalrekening_inkomsten_bedrijf.sum()
+    betaalrekening_inkomsten_bedrijf = betaalrekening_inkomsten_bedrijf.sort_values(by = ["jaar"], ascending = False)
+    kolommen_gesorteerd_inkomsten_bedrijf = betaalrekening_inkomsten_bedrijf.columns[betaalrekening_inkomsten_bedrijf.loc["totaal"].argsort()[::-1]]
+    
+    betaalrekening_uitgaven_bedrijf = betaalrekening[
+        (betaalrekening["bedrag"] < 0.0)
+        & (betaalrekening["categorie"] != "interne overboeking")
+        & (betaalrekening["type"] == "bedrijf")
+    ].pivot_table(
+        "bedrag",
+        ["jaar", "derde"],
+        aggfunc = "sum",
+    ).reset_index(
+    ).pivot(
+        index = "jaar",
+        columns = "derde",
+        values = "bedrag",
+    )
+    betaalrekening_uitgaven_bedrijf["totaal"] = betaalrekening_uitgaven_bedrijf.sum(axis = 1)
+    betaalrekening_uitgaven_bedrijf.loc["totaal"] = betaalrekening_uitgaven_bedrijf.sum()
+    betaalrekening_uitgaven_bedrijf = betaalrekening_uitgaven_bedrijf.sort_values(by = ["jaar"], ascending = False)
+    kolommen_gesorteerd_uitgaven_bedrijf = betaalrekening_uitgaven_bedrijf.columns[betaalrekening_uitgaven_bedrijf.loc["totaal"].argsort()]
+    
+    betaalrekening_inkomsten_persoon = betaalrekening[
+        (betaalrekening["bedrag"] > 0.0)
+        & (betaalrekening["categorie"] != "interne overboeking")
+        & (betaalrekening["type"] == "persoon")
+    ].pivot_table(
+        "bedrag",
+        ["jaar", "derde"],
+        aggfunc = "sum",
+    ).reset_index(
+    ).pivot(
+        index = "jaar",
+        columns = "derde",
+        values = "bedrag",
+    )
+    betaalrekening_inkomsten_persoon["totaal"] = betaalrekening_inkomsten_persoon.sum(axis = 1)
+    betaalrekening_inkomsten_persoon.loc["totaal"] = betaalrekening_inkomsten_persoon.sum()
+    betaalrekening_inkomsten_persoon = betaalrekening_inkomsten_persoon.sort_values(by = ["jaar"], ascending = False)
+    kolommen_gesorteerd_inkomsten_persoon = betaalrekening_inkomsten_persoon.columns[betaalrekening_inkomsten_persoon.loc["totaal"].argsort()[::-1]]
+    
+    betaalrekening_uitgaven_persoon = betaalrekening[
+        (betaalrekening["bedrag"] < 0.0)
+        & (betaalrekening["categorie"] != "interne overboeking")
+        & (betaalrekening["type"] == "persoon")
+    ].pivot_table(
+        "bedrag",
+        ["jaar", "derde"],
+        aggfunc = "sum",
+    ).reset_index(
+    ).pivot(
+        index = "jaar",
+        columns = "derde",
+        values = "bedrag",
+    )
+    betaalrekening_uitgaven_persoon["totaal"] = betaalrekening_uitgaven_persoon.sum(axis = 1)
+    betaalrekening_uitgaven_persoon.loc["totaal"] = betaalrekening_uitgaven_persoon.sum()
+    betaalrekening_uitgaven_persoon = betaalrekening_uitgaven_persoon.sort_values(by = ["jaar"], ascending = False)
+    kolommen_gesorteerd_uitgaven_persoon = betaalrekening_uitgaven_persoon.columns[betaalrekening_uitgaven_persoon.loc["totaal"].argsort()]
+    
     st.dataframe(
         betaalrekening_uitgaven_hoofdcategorie[kolommen_gesorteerd_uitgaven_hoofdcategorie],
     )
@@ -120,16 +196,15 @@ def rapporteren():
     st.dataframe(
         betaalrekening_inkomsten_categorie[kolommen_gesorteerd_inkomsten_categorie],
     )
-"""
- [ ] tabel met uitgaven per hoofdcategorie/categorie
-            HFDCAT1 HFDCAT1_CAT1 HFDCAT1_CAT2 HFDCAT2 HFDCAT2_CAT1 ...
-    2010
-    2011
-    2012
-    ...
-    totaal        
- 
- [ ] tabel met uitgaven bedrijven > €100,- totaal
- [ ] tabel met uitgaven personen > €100,- totaal
- [ ] t abel met uitgaven locaties > €100
-"""
+    st.dataframe(
+        betaalrekening_inkomsten_bedrijf[kolommen_gesorteerd_inkomsten_bedrijf]
+    )
+    st.dataframe(
+        betaalrekening_uitgaven_bedrijf[kolommen_gesorteerd_uitgaven_bedrijf]
+    )
+    st.dataframe(
+        betaalrekening_inkomsten_persoon[kolommen_gesorteerd_inkomsten_persoon]
+    )
+    st.dataframe(
+        betaalrekening_uitgaven_persoon[kolommen_gesorteerd_uitgaven_persoon]
+    )
