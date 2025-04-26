@@ -42,7 +42,7 @@ De `Rapporteren` module dient op een gelijke manier als `Weergave` uitgevoerd te
 
 ## Gegevensverwerking
 
-Alle gegevens wordt opgeslagen in JSON bestanden in `/gegevens/`. `Platus` bevat geen functionaliteit om de benodigde bestanden te genereren. Echter moet de broncode genoeg zijn voor de gevorderde programmeur om van start te gaan. Op verzoek kan ik voorbeeldgegevens genereren om mee te spelen.
+Alle gegevens worden opgeslagen in JSON bestanden in `/gegevens/`. `Platus` bevat geen functionaliteit om de benodigde bestanden te genereren. Echter moet de broncode genoeg zijn voor de gevorderde programmeur om van start te gaan. Op verzoek kan ik voorbeeldgegevens genereren om mee te spelen.
 
 ## De Transactie class
 
