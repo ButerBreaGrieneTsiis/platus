@@ -2,12 +2,15 @@
 name = "platus"
 version = "1.1.0"
 authors = [
-	{name = "Tom Scheeper", email = "tomscheeper@gmail.com"},
-	]
+    {
+        name = "Tom Scheeper",
+	email = "tomscheeper@gmail.com",
+ 	},
+    ]
 
 dependencies = [
     "pandas>=2.2.3",
-	"openpyxl>=3.1.5",
-	"grienetsiis@git+https://github.com/ButerBreaGrieneTsiis/grienetsiis#egg=1.2.0",
-	"streamlit>=1.44.1",
+    "openpyxl>=3.1.5",
+    "grienetsiis@git+https://github.com/ButerBreaGrieneTsiis/grienetsiis#egg=1.2.0",
+    "streamlit>=1.44.1",
 ]
