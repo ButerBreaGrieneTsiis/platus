@@ -1,8 +1,10 @@
 # Platus
 
-`Platus` is mijn persoonlijke Python module om mijn financiën bij te houden: bankrekeningen, leningen en beleggingen. Alle geldbewegingen worden gekenmerkt door een `Transactie` class: in principe draait heel `Platus` om deze class. De velden van deze class staan in de tabel onderaan. `Platus` bevat op dit moment enkel functionaliteit om banktransactie in te lezen en te verwerken vanaf exports van ABN AMRO internet bankieren. Elke transactie wordt gecategoriseerd en een derde toegezen (degene met wie de transactie plaatsvond). Doordat `Platus` in staat is de toegekende wijzigingen op te slaan, wordt in verloop van tijd het verwerken zo goed als automatisch. 
+`Platus` is mijn persoonlijke Python module om mijn financiën bij te houden: bankrekeningen, leningen en beleggingen. Het is geschreven in Python als een objectgeoriënteerd programma, waarbij elke geldbeweging worden gekenmerkt door een `Transactie` class: in principe draait heel `Platus` om deze class. De velden van deze class staan in de tabel onderaan. 
 
-De `Gegevens` module bevat alle functionaliteiten omtrent de gegevensvewerking en opslag. Deze gegevens kunnen worden ingelezen door de modules `Rapporteren`, die data presenteert in tabellen, en `Weergave`, die data presenteert in interactieve grafieken. De onderstaande afbeelding laat de `Weergave` module zien (titels, labels en legenda zijn opzettelijk verborgen). Zelfs een kaart is zichtbaar met de locatie van alle transactie met pinpas.
+`Platus` bevat op dit moment enkel functionaliteit om banktransacties in te lezen en te verwerken vanaf exports van ABN AMRO internet bankieren. Elke transactie wordt gecategoriseerd en een derde toegezen (degene met wie de transactie plaatsvond). Doordat `Platus` in staat is de toegekende wijzigingen op te slaan, wordt in verloop van tijd het verwerken zo goed als automatisch. In de breedste zin van het woord is het een soort machine learning.
+
+De `Gegevens` module bevat alle functionaliteiten omtrent de gegevensverwerking en opslag. Deze gegevens kunnen worden ingelezen door de modules `Rapporteren`, die data presenteert in tabellen, en `Weergave`, die data presenteert in interactieve grafieken. De onderstaande afbeelding laat de `Weergave` module zien (titels, labels en legenda zijn opzettelijk verborgen). Zelfs een kaart is zichtbaar met de locatie van alle transactie met pinpas.
 
 ![alt text][logo]
 
@@ -41,6 +43,8 @@ De `Rapporteren` module dient op een gelijke manier als `Weergave` uitgevoerd te
 ## Gegevensverwerking
 
 Alle gegevens wordt opgeslagen in JSON bestanden in `/gegevens/`. `Platus` bevat geen functionaliteit om de benodigde bestanden te genereren. Echter moet de broncode genoeg zijn voor de gevorderde programmeur om van start te gaan. Op verzoek kan ik voorbeeldgegevens genereren om mee te spelen.
+
+## De Transactie class
 
 | **veld**          | **type**      | **beschrijving**                                                                                                                                                                          |
 |-------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
