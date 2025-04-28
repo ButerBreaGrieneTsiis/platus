@@ -17,10 +17,10 @@ def weergave():
     st.markdown(
         r"""
         <style>
-        .block-container {
-            padding-top: 0rem;
-            padding-bottom: 0rem;
-            }
+        # .block-container {
+        #     padding-top: 0rem;
+        #     padding-bottom: 0rem;
+        #     }
         section.main > div:has(~ footer ) {
             padding-bottom: 5px;
         }
@@ -67,6 +67,9 @@ def weergave():
         
         return weergave_configuratie, gegevens_benelux
     
+    if "domein_2_jaar" not in st.session_state:
+        st.session_state["domein_2_jaar"] = dt.datetime.today().year
+    
     bankrekeningen = laden_bankrekeningen()
     leningen = laden_leningen()
     bankrekening_som, lening_som = maken_som(bankrekeningen, leningen)
@@ -81,12 +84,16 @@ def weergave():
         figuur_uitgaven = st.empty()
     
     with kolom_2:
-        inover_domein_2 = st.empty()
-        figuur_categorie = st.empty()
         kolom_2_1, kolom_2_2 = st.columns(2)
         with kolom_2_1:
-            figuur_taartdiagram_inkomsten = st.empty()
+            invoer_domein_2_1 = st.empty()
         with kolom_2_2:
+            invoer_domein_2_2 = st.empty()
+        figuur_categorie = st.empty()
+        kolom_2_3, kolom_2_4 = st.columns(2)
+        with kolom_2_3:
+            figuur_taartdiagram_inkomsten = st.empty()
+        with kolom_2_4:
             figuur_taartdiagram_uitgaven = st.empty()
     
     with kolom_3:
@@ -103,20 +110,34 @@ def weergave():
         value = (alt.DateTime(year = dt.date.today().year - 5, month = dt.date.today().month), alt.DateTime(year = dt.date.today().year, month = dt.date.today().month)),
         format_func = lambda jaarmaand: f"{jaarmaand.year}-{jaarmaand.month:02}",
         label_visibility = "hidden",
-    )
+        )
     
-    st.session_state["domein_2"] = inover_domein_2.select_slider(
-        label = "domein_2",
-        options = [alt.DateTime(year = jaar, month = maand) for jaar, maand in jaar_maand_iterator(
-            weergave_configuratie["betaalrekening"]["begin_jaar"],
-            weergave_configuratie["betaalrekening"]["begin_maand"],
-            dt.date.today().year,
-            dt.date.today().month,
-            )],
-        value = alt.DateTime(year = dt.date.today().year, month = dt.date.today().month - 1),
-        format_func = lambda jaarmaand: f"{jaarmaand.year}-{jaarmaand.month:02}",
+    st.session_state["domein_2_maand"] = invoer_domein_2_2.select_slider(
+        label = "domein_2_maand",
+        options = [
+            maand for maand in range(
+                1,
+                13,
+                )
+        ],
+        value = dt.date.today().month,
         label_visibility = "hidden",
-    )
+        )
+    
+    st.session_state["domein_2_jaar"] = invoer_domein_2_1.select_slider(
+        label = "domein_2_jaar",
+        options = [jaar for jaar in range(
+            weergave_configuratie["betaalrekening"]["begin_jaar"],
+            dt.date.today().year + 1,
+            )],
+        value = dt.date.today().year,
+        label_visibility = "hidden",
+        )
+    
+    st.session_state["domein_2"] = alt.DateTime(
+        year = st.session_state["domein_2_jaar"],
+        month = st.session_state["domein_2_maand"],
+        )
     
     charts_bankrekening_saldo = []
     for bankrekening_uuid, bankrekening in bankrekeningen.items():
