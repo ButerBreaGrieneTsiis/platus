@@ -79,6 +79,27 @@ def weergave():
     bankrekening_som, lening_som = maken_som(bankrekeningen, leningen)
     weergave_configuratie, gegevens_benelux = laden()
     
+    locale = { # https://github.com/streamlit/streamlit/issues/1161#issuecomment-1873804437
+        "embedOptions": {
+            "formatLocale": {      # https://github.com/d3/d3-format/blob/main/locale/nl-NL.json
+                "decimal": ",",
+                "thousands": ".",
+                "grouping": [3],
+                "currency": ["€\u00a0", ""],
+                },
+            "timeFormatLocale": {  # https://github.com/d3/d3-time-format/blob/main/locale/nl-NL.json
+                "dateTime": "%a %e %B %Y %X",
+                "date": "%d-%m-%Y",
+                "time": "%H:%M:%S",
+                "periods": ["AM", "PM"],
+                "days": ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"],
+                "shortDays": ["zo", "ma", "di", "wo", "do", "vr", "za"],
+                "months": ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"],
+                "shortMonths": ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"],
+                },
+            },
+        }
+    
     kolom_1, kolom_2, kolom_3, kolom_4 = st.columns(4)
     
     with kolom_1:
@@ -98,10 +119,10 @@ def weergave():
         invoer_domein_2 = st.empty()
         kolom_2_1, kolom_2_2 = st.columns(2)
         with kolom_2_1:
-            figuur_taartdiagram_inkomsten_jaar = st.empty()
+            figuur_jaar_taartdiagram_inkomsten = st.empty()
         with kolom_2_2:
-            figuur_taartdiagram_uitgaven_jaar = st.empty()
-        figuur_categorie_jaar = st.empty()
+            figuur_jaar_taartdiagram_uitgaven = st.empty()
+        figuur_jaar_staafdiagram = st.empty()
     
     with kolom_3:
         st.header(
@@ -111,18 +132,18 @@ def weergave():
         kolom_3_1, kolom_3_2 = st.columns(2)
         with kolom_3_1:
             invoer_domein_3_1 = st.empty()
-            figuur_taartdiagram_inkomsten_jaarmaand = st.empty()
+            figuur_maand_taartdiagram_inkomsten = st.empty()
         with kolom_3_2:
             invoer_domein_3_2 = st.empty()
-            figuur_taartdiagram_uitgaven_jaarmaand = st.empty()
-        figuur_categorie_jaarmaand = st.empty()
+            figuur_maand_taartdiagram_uitgaven = st.empty()
+        figuur_maand_staafdiagram = st.empty()
     
     with kolom_4:
         st.header(
             body = "kaart",
             divider = True,
             )
-        kaart_europa = st.empty()
+        figuur_kaart_europa = st.empty()
         figuur_saldo = st.empty()
         
     st.session_state["domein_1_begin"], st.session_state["domein_1_eind"] = invoer_domein_1.select_slider(
@@ -197,6 +218,7 @@ def weergave():
                     type = "quantitative",
                     axis = alt.Axis(
                         title = None,
+                        format = "$,.2f",
                         ),
                     scale = alt.Scale(
                         domainMin = 0,
@@ -211,7 +233,7 @@ def weergave():
                         ),
                     alt.Tooltip(
                         "eindsaldo",
-                        format = ".2f",
+                        format = "$,.2f",
                         title = "saldo",
                         ),
                     ]
@@ -223,7 +245,7 @@ def weergave():
                         st.session_state["domein_1_eind"],
                         ),
                     ),
-                ),
+                )
             )
     
     charts_bankrekening_saldo.append(
@@ -257,7 +279,7 @@ def weergave():
                     ),
                 alt.Tooltip(
                     "eindsaldo",
-                    format = ".2f",
+                    format = "$,.2f",
                     title = "saldo",
                     ),
                 ]
@@ -293,6 +315,7 @@ def weergave():
                     type = "quantitative",
                     axis = alt.Axis(
                         title = None,
+                        format = "$,.2f",
                         ),
                     ),
                 color   =   alt.value(getattr(standaard, weergave_configuratie["rekeningen"]["kleuren"][lening_uuid]).hex),
@@ -304,7 +327,7 @@ def weergave():
                         ),
                     alt.Tooltip(
                         "eindsaldo",
-                        format = ".2f",
+                        format = "$,.2f",
                         title = "saldo",
                         ),
                     ]
@@ -339,6 +362,7 @@ def weergave():
                 type = "quantitative",
                 axis = alt.Axis(
                     title = None,
+                    format = "$,.2f",
                     ),
                 ),
             color = alt.value(wit_gebroken.hex),
@@ -350,7 +374,7 @@ def weergave():
                     ),
                 alt.Tooltip(
                     "eindsaldo",
-                    format = ".2f",
+                    format = "$,.2f",
                     title = "saldo",
                     ),
                 ]
@@ -365,7 +389,7 @@ def weergave():
             ),
         )
     
-    oppervlakte_hoofdcategorie_inkomsten = alt.Chart(
+    grafiek_oppervlakte_inkomsten = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
         title = alt.Title(
             text = "inkomsten",
@@ -405,7 +429,7 @@ def weergave():
                 ),
             alt.Tooltip(
                 "sum(bedrag):Q",
-                format = ".2f",
+                format = "$,.2f",
                 title = "bedrag"
                 ),
             ],
@@ -427,7 +451,7 @@ def weergave():
             )
         )
     
-    oppervlakte_hoofdcategorie_uitgaven = alt.Chart(
+    grafiek_oppervlakte_uitgaven = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
         title = alt.Title(
             text = "uitgaven",
@@ -472,7 +496,7 @@ def weergave():
                 field = "bedrag",
                 type = "quantitative",
                 aggregate = "sum",
-                format = ".2f",
+                format = "$,.2f",
                 ),
             ],
     ).transform_filter(
@@ -493,131 +517,7 @@ def weergave():
             )
         )
     
-    lijn_hoofdcategorie_inkomsten = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
-    ).mark_line(
-        clip = True,
-    ).encode(
-        x = alt.X(
-            field = "datumtijd",
-            type = "temporal",
-            axis = alt.Axis(
-                title = None,
-                ),
-            timeUnit = "yearmonth",
-            ),
-        y = alt.Y(
-            field = "bedrag",
-            aggregate = "sum",
-            type = "quantitative",
-            axis = None,
-            impute = {
-                "value": 0.0
-                },
-            ),
-        color = alt.Color(
-            "hoofdcategorie:N",
-            legend = None,
-            ),
-        tooltip = [
-            alt.Tooltip(
-                "hoofdcategorie",
-                title = "hoofdcategorie",
-                ),
-            alt.Tooltip(
-                "yearmonth(datumtijd):T",
-                format = "%B %Y",
-                title = "datum",
-                ),
-            alt.Tooltip(
-                "sum(bedrag):Q",
-                format = ".2f",
-                title = "bedrag"
-                ),
-            ],
-    ).transform_filter(
-        alt.FieldGTPredicate(
-            field = "bedrag",
-            gt = 0.0,
-            )
-        & ~alt.FieldOneOfPredicate(
-            field = "categorie",
-            oneOf = weergave_configuratie["betaalrekening"]["categorie_stackchart_uitsluiten"],
-            )
-        & alt.FieldRangePredicate(
-            field = "datumtijd",
-            range = (
-                st.session_state["domein_1_begin"],
-                st.session_state["domein_1_eind"],
-                ),
-            )
-        )
-    
-    lijn_hoofdcategorie_uitgaven = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
-    ).mark_line(
-        clip = True,
-    ).encode(
-        x = alt.X(
-            field = "datumtijd",
-            type = "temporal",
-            axis = alt.Axis(
-                title = None,
-                ),
-            timeUnit = "yearmonth",
-        ),
-        y = alt.Y(
-            field = "bedrag",
-            aggregate = "sum",
-            type = "quantitative",
-            axis = None,
-            impute = {
-                "value": 0.0
-                },
-        ),
-        color   =   alt.Color(
-            field = "hoofdcategorie",
-            type = "nominal",
-            legend = None,
-            ),
-        tooltip =   [
-            alt.Tooltip(
-                field = "hoofdcategorie",
-                title = "hoofdcategorie",
-                ),
-            alt.Tooltip(
-                field = "datumtijd",
-                type = "temporal",
-                timeUnit = "yearmonth",
-                format = "%B %Y",
-                title = "datum",
-                ),
-            alt.Tooltip(
-                field = "bedrag",
-                type = "quantitative",
-                aggregate = "sum",
-                format = ".2f",
-                ),
-            ],
-    ).transform_filter(
-        alt.FieldLTPredicate(
-            field = "bedrag",
-            lt = 0.0,
-        )
-        & ~alt.FieldOneOfPredicate(
-            field = "categorie",
-            oneOf = weergave_configuratie["betaalrekening"]["categorie_stackchart_uitsluiten"],
-        )
-        & alt.FieldRangePredicate(
-            field = "datumtijd",
-            range = (
-                st.session_state["domein_1_begin"],
-                st.session_state["domein_1_eind"],
-            ),
-        )
-    )
-    
-    staafdiagram_categorie_inkomsten_jaar = alt.Chart(
+    grafiek_jaar_staafdiagram_inkomsten = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
     ).mark_bar(
     ).encode(
@@ -637,7 +537,7 @@ def weergave():
                 },
             axis = alt.Axis(
                 title = None,
-                format = "$",
+                format = "$,.2f",
                 ),
             ),
         color   =   alt.Color(
@@ -654,7 +554,7 @@ def weergave():
                 field = "bedrag",
                 aggregate = "sum",
                 type = "quantitative",
-                format = ".2f",
+                format = "$,.2f",
                 ),
             ]
     ).transform_filter(
@@ -677,7 +577,7 @@ def weergave():
             )
         )
     
-    staafdiagram_categorie_uitgaven_jaar = alt.Chart(
+    grafiek_jaar_staafdiagram_uitgaven = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
     ).mark_bar(
     ).encode(
@@ -697,7 +597,7 @@ def weergave():
                 },
             axis = alt.Axis(
                 title = None,
-                format = "$",
+                format = "$,.2f",
                 ),
             ),
         color   =   alt.Color(
@@ -714,7 +614,7 @@ def weergave():
                 field = "bedrag",
                 aggregate = "sum",
                 type = "quantitative",
-                format = ".2f",
+                format = "$,.2f",
                 title = "bedrag"
                 ),
             ]
@@ -738,126 +638,7 @@ def weergave():
             )
         )
     
-    staafdiagram_categorie_inkomsten_jaarmaand = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
-    ).mark_bar(
-    ).encode(
-        x = alt.X(
-            field = "hoofdcategorie",
-            type = "nominal",
-            axis = alt.Axis(
-                title = None,
-                ),
-            ),
-        y = alt.Y(
-            field = "bedrag",
-            aggregate = "sum",
-            type = "quantitative",
-            impute = {
-                "value": 0,
-                },
-            axis = alt.Axis(
-                title = None,
-                ),
-            ),
-        color   =   alt.Color(
-            field = "categorie",
-            type = "nominal",
-            legend = None,
-            ),
-        tooltip =   [
-            alt.Tooltip(
-                field = "categorie",
-                title = "categorie",
-                ),
-            alt.Tooltip(
-                field = "bedrag",
-                aggregate = "sum",
-                type = "quantitative",
-                format = ".2f",
-                ),
-            ]
-    ).transform_filter(
-        alt.FieldGTPredicate(
-            field = "bedrag",
-            gt = 0.0,
-            )
-        & ~alt.FieldOneOfPredicate(
-            field = "categorie",
-            oneOf = weergave_configuratie["betaalrekening"]["categorie_staafdiagram_uitsluiten"],
-            )
-        & ~alt.FieldOneOfPredicate(
-            field = "hoofdcategorie",
-            oneOf = weergave_configuratie["betaalrekening"]["hoofdcategorie_staafdiagram_uitsluiten"],
-            )
-        & alt.FieldEqualPredicate(
-            field = "datumtijd",
-            equal = st.session_state["domein_3"],
-            timeUnit = "yearmonth",
-            )
-        )
-    
-    staafdiagram_categorie_uitgaven_jaarmaand = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
-    ).mark_bar(
-    ).encode(
-        x = alt.X(
-            field = "hoofdcategorie",
-            type = "nominal",
-            axis = alt.Axis(
-                title = None,
-                ),
-            ),
-        y = alt.Y(
-            field = "bedrag",
-            aggregate = "sum",
-            type = "quantitative",
-            impute = {
-                "value": 0,
-                },
-            axis = alt.Axis(
-                title = None,
-                ),
-            ),
-        color   =   alt.Color(
-            field = "categorie",
-            type = "nominal",
-            legend = None,
-            ),
-        tooltip =   [
-            alt.Tooltip(
-                field = "categorie",
-                title = "categorie",
-                ),
-            alt.Tooltip(
-                field = "bedrag",
-                aggregate = "sum",
-                type = "quantitative",
-                format = ".2f",
-                title = "bedrag"
-                ),
-            ]
-    ).transform_filter(
-        alt.FieldLTPredicate(
-            field = "bedrag",
-            lt = 0.0,
-            )
-        & ~alt.FieldOneOfPredicate(
-            field = "categorie",
-            oneOf = weergave_configuratie["betaalrekening"]["categorie_staafdiagram_uitsluiten"],
-            )
-        & ~alt.FieldOneOfPredicate(
-            field = "hoofdcategorie",
-            oneOf = weergave_configuratie["betaalrekening"]["hoofdcategorie_staafdiagram_uitsluiten"],
-            )
-        & alt.FieldEqualPredicate(
-            field = "datumtijd",
-            equal = st.session_state["domein_3"],
-            timeUnit = "yearmonth",
-            )
-        )
-    
-    taartdiagram_categorie_inkomsten_jaar = alt.Chart(
+    grafiek_jaar_taartdiagram_inkomsten = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
         title = alt.Title(
             text = "inkomsten",
@@ -884,7 +665,7 @@ def weergave():
                 field = "bedrag",
                 type = "quantitative",
                 aggregate = "sum",
-                format = ".2f",
+                format = "$,.2f",
                 title = "bedrag",
                 ),
             ],
@@ -902,9 +683,11 @@ def weergave():
             equal = alt.DateTime(year = st.session_state["domein_2"]),
             timeUnit = "year",
             )
-        ) 
+    ).properties(
+        usermeta = locale,
+        )
     
-    taartdiagram_categorie_uitgaven_jaar = alt.Chart(
+    grafiek_jaar_taartdiagram_uitgaven = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
         title = alt.Title(
             text = "uitgaven",
@@ -930,7 +713,7 @@ def weergave():
                 field = "bedrag",
                 type = "quantitative",
                 aggregate = "sum",
-                format = ".2f",
+                format = "$,.2f",
                 title = "bedrag",
                 ),
             ],
@@ -948,9 +731,132 @@ def weergave():
             equal = alt.DateTime(year = st.session_state["domein_2"]),
             timeUnit = "year",
             )
+    ).properties(
+        usermeta = locale,
         )
     
-    taartdiagram_categorie_inkomsten_jaarmaand = alt.Chart(
+    grafiek_maand_staafdiagram_inkomsten = alt.Chart(
+        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+    ).mark_bar(
+    ).encode(
+        x = alt.X(
+            field = "hoofdcategorie",
+            type = "nominal",
+            axis = alt.Axis(
+                title = None,
+                ),
+            ),
+        y = alt.Y(
+            field = "bedrag",
+            aggregate = "sum",
+            type = "quantitative",
+            impute = {
+                "value": 0,
+                },
+            axis = alt.Axis(
+                title = None,
+                format = "$,.2f",
+                ),
+            ),
+        color   =   alt.Color(
+            field = "categorie",
+            type = "nominal",
+            legend = None,
+            ),
+        tooltip =   [
+            alt.Tooltip(
+                field = "categorie",
+                title = "categorie",
+                ),
+            alt.Tooltip(
+                field = "bedrag",
+                aggregate = "sum",
+                type = "quantitative",
+                format = "$,.2f",
+                ),
+            ]
+    ).transform_filter(
+        alt.FieldGTPredicate(
+            field = "bedrag",
+            gt = 0.0,
+            )
+        & ~alt.FieldOneOfPredicate(
+            field = "categorie",
+            oneOf = weergave_configuratie["betaalrekening"]["categorie_staafdiagram_uitsluiten"],
+            )
+        & ~alt.FieldOneOfPredicate(
+            field = "hoofdcategorie",
+            oneOf = weergave_configuratie["betaalrekening"]["hoofdcategorie_staafdiagram_uitsluiten"],
+            )
+        & alt.FieldEqualPredicate(
+            field = "datumtijd",
+            equal = st.session_state["domein_3"],
+            timeUnit = "yearmonth",
+            )
+        )
+    
+    grafiek_maand_staafdiagram_uitgaven = alt.Chart(
+        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+    ).mark_bar(
+    ).encode(
+        x = alt.X(
+            field = "hoofdcategorie",
+            type = "nominal",
+            axis = alt.Axis(
+                title = None,
+                ),
+            ),
+        y = alt.Y(
+            field = "bedrag",
+            aggregate = "sum",
+            type = "quantitative",
+            impute = {
+                "value": 0,
+                },
+            axis = alt.Axis(
+                title = None,
+                format = "$,.2f",
+                ),
+            ),
+        color   =   alt.Color(
+            field = "categorie",
+            type = "nominal",
+            legend = None,
+            ),
+        tooltip =   [
+            alt.Tooltip(
+                field = "categorie",
+                title = "categorie",
+                ),
+            alt.Tooltip(
+                field = "bedrag",
+                aggregate = "sum",
+                type = "quantitative",
+                format = "$,.2f",
+                title = "bedrag"
+                ),
+            ]
+    ).transform_filter(
+        alt.FieldLTPredicate(
+            field = "bedrag",
+            lt = 0.0,
+            )
+        & ~alt.FieldOneOfPredicate(
+            field = "categorie",
+            oneOf = weergave_configuratie["betaalrekening"]["categorie_staafdiagram_uitsluiten"],
+            )
+        & ~alt.FieldOneOfPredicate(
+            field = "hoofdcategorie",
+            oneOf = weergave_configuratie["betaalrekening"]["hoofdcategorie_staafdiagram_uitsluiten"],
+            )
+        & alt.FieldEqualPredicate(
+            field = "datumtijd",
+            equal = st.session_state["domein_3"],
+            timeUnit = "yearmonth",
+            )
+        )
+    
+    grafiek_maand_taartdiagram_inkomsten = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
         title = alt.Title(
             text = "inkomsten",
@@ -977,7 +883,7 @@ def weergave():
                 field = "bedrag",
                 type = "quantitative",
                 aggregate = "sum",
-                format = ".2f",
+                format = "$,.2f",
                 title = "bedrag",
                 ),
             ],
@@ -995,9 +901,11 @@ def weergave():
             equal = st.session_state["domein_3"],
             timeUnit = "yearmonth",
             )
-        ) 
+    ).properties(
+        usermeta = locale,
+        )
     
-    taartdiagram_categorie_uitgaven_jaarmaand = alt.Chart(
+    grafiek_maand_taartdiagram_uitgaven = alt.Chart(
         bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
         title = alt.Title(
             text = "uitgaven",
@@ -1023,7 +931,7 @@ def weergave():
                 field = "bedrag",
                 type = "quantitative",
                 aggregate = "sum",
-                format = ".2f",
+                format = "$,.2f",
                 title = "bedrag",
                 ),
             ],
@@ -1041,6 +949,8 @@ def weergave():
             equal = st.session_state["domein_3"],
             timeUnit = "yearmonth",
             )
+    ).properties(
+        usermeta = locale,
         )
     
     grondkaart_benelux = alt.Chart(gegevens_benelux).mark_geoshape(
@@ -1089,7 +999,7 @@ def weergave():
                 type = "quantitative",
                 aggregate = "sum",
                 title = "bedrag",
-                format = ".2f",
+                format = "$,.2f",
                 ),
             ],
         color = alt.value(wit_gebroken.hex),
@@ -1110,15 +1020,27 @@ def weergave():
         height = 500,
     )
     
+    grafiek_jaar_staafdiagram = alt.layer(
+        grafiek_jaar_staafdiagram_inkomsten,
+        grafiek_jaar_staafdiagram_uitgaven,
+    ).properties(
+        usermeta = locale,
+        )
+    
+    grafiek_maand_staafdiagram = alt.layer(
+        grafiek_maand_staafdiagram_inkomsten,
+        grafiek_maand_staafdiagram_uitgaven,
+    ).properties(
+        usermeta = locale,
+        )
+    
     figuur_saldo.altair_chart(alt.layer(*charts_bankrekening_saldo) + alt.layer(*charts_lening_saldo))
-    figuur_inkomsten.altair_chart(oppervlakte_hoofdcategorie_inkomsten)
-    # figuur_inkomsten.altair_chart(lijn_hoofdcategorie_inkomsten)
-    figuur_uitgaven.altair_chart(oppervlakte_hoofdcategorie_uitgaven)
-    # figuur_uitgaven.altair_chart(lijn_hoofdcategorie_uitgaven)
-    figuur_taartdiagram_inkomsten_jaar.altair_chart(taartdiagram_categorie_inkomsten_jaar)
-    figuur_taartdiagram_uitgaven_jaar.altair_chart(taartdiagram_categorie_uitgaven_jaar)
-    figuur_categorie_jaar.altair_chart(staafdiagram_categorie_inkomsten_jaar + staafdiagram_categorie_uitgaven_jaar)
-    figuur_taartdiagram_inkomsten_jaarmaand.altair_chart(taartdiagram_categorie_inkomsten_jaarmaand)
-    figuur_taartdiagram_uitgaven_jaarmaand.altair_chart(taartdiagram_categorie_uitgaven_jaarmaand)
-    figuur_categorie_jaarmaand.altair_chart(staafdiagram_categorie_inkomsten_jaarmaand + staafdiagram_categorie_uitgaven_jaarmaand)
-    kaart_europa.altair_chart(grondkaart_benelux + pinbas_benelux)
+    figuur_inkomsten.altair_chart(grafiek_oppervlakte_inkomsten)
+    figuur_uitgaven.altair_chart(grafiek_oppervlakte_uitgaven)
+    figuur_jaar_staafdiagram.altair_chart(grafiek_jaar_staafdiagram)
+    figuur_jaar_taartdiagram_inkomsten.altair_chart(grafiek_jaar_taartdiagram_inkomsten)
+    figuur_jaar_taartdiagram_uitgaven.altair_chart(grafiek_jaar_taartdiagram_uitgaven)
+    figuur_maand_staafdiagram.altair_chart(grafiek_maand_staafdiagram)
+    figuur_maand_taartdiagram_inkomsten.altair_chart(grafiek_maand_taartdiagram_inkomsten)
+    figuur_maand_taartdiagram_uitgaven.altair_chart(grafiek_maand_taartdiagram_uitgaven)
+    figuur_kaart_europa.altair_chart(grondkaart_benelux + pinbas_benelux)
