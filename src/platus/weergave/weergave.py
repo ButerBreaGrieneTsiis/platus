@@ -414,8 +414,8 @@ def weergave():
             axis = None,
             ),
         color = alt.Color(
-            "hoofdcategorie:N",
-            legend = None,
+            field = "hoofdcategorie_kleur",
+            scale = None,
             ),
         tooltip = [
             alt.Tooltip(
@@ -475,10 +475,9 @@ def weergave():
             stack = "center",
             axis = None,
         ),
-        color   =   alt.Color(
-            field = "hoofdcategorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "hoofdcategorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -540,12 +539,11 @@ def weergave():
                 format = "$,.2f",
                 ),
             ),
-        color   =   alt.Color(
-            field = "categorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "categorie_kleur",
+            scale = None,
             ),
-        tooltip =   [
+        tooltip = [
             alt.Tooltip(
                 field = "categorie",
                 title = "categorie",
@@ -600,10 +598,9 @@ def weergave():
                 format = "$,.2f",
                 ),
             ),
-        color   =   alt.Color(
-            field = "categorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "categorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -651,10 +648,9 @@ def weergave():
             type = "quantitative",
             aggregate = "sum",
             ),
-        color   =   alt.Color(
-            field = "hoofdcategorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "hoofdcategorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -699,10 +695,9 @@ def weergave():
             type = "quantitative",
             aggregate = "sum",
             ),
-        color   =   alt.Color(
-            field = "hoofdcategorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "hoofdcategorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -758,10 +753,9 @@ def weergave():
                 format = "$,.2f",
                 ),
             ),
-        color   =   alt.Color(
-            field = "categorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "categorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -818,10 +812,9 @@ def weergave():
                 format = "$,.2f",
                 ),
             ),
-        color   =   alt.Color(
-            field = "categorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "categorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -869,10 +862,9 @@ def weergave():
             type = "quantitative",
             aggregate = "sum",
             ),
-        color   =   alt.Color(
-            field = "hoofdcategorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "hoofdcategorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -917,10 +909,9 @@ def weergave():
             type = "quantitative",
             aggregate = "sum",
             ),
-        color   =   alt.Color(
-            field = "hoofdcategorie",
-            type = "nominal",
-            legend = None,
+        color = alt.Color(
+            field = "hoofdcategorie_kleur",
+            scale = None,
             ),
         tooltip =   [
             alt.Tooltip(
@@ -1018,7 +1009,7 @@ def weergave():
     ).properties(
         width = 300,
         height = 500,
-    )
+        )
     
     grafiek_jaar_staafdiagram = alt.layer(
         grafiek_jaar_staafdiagram_inkomsten,
