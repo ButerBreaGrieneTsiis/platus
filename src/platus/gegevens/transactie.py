@@ -232,6 +232,7 @@ class Transactie:
             "transactiemethode":    self.transactiemethode,
             "datumtijd":            self.datumtijd,
             "hoofdcategorie":       self.hoofdcategorie(categorieen, hoofdcategorieen).naam,
+            "hoofdcategorie_kleur": self.hoofdcategorie(categorieen, hoofdcategorieen).kleur.hex,
             "categorie":            self.categorie(categorieen).naam,
             "categorie_kleur":      self.categorie(categorieen).kleur.hex,
             "derde":                derde["naam"]  if isinstance(derde, dict) else derde.naam,
