@@ -12,7 +12,7 @@ class PlatusType:
         **dict: Dict[str, Any]
         ):
         
-        patroon_kleur = re.compile(r"^#[0-9a-f]{8}$")
+        patroon_kleur = re.compile(r"^#[0-9a-f]{6}$")
         
         for sleutel, waarde in dict.items():
             if isinstance(waarde, str) and bool(patroon_kleur.match(waarde)):
@@ -46,9 +46,11 @@ class HoofdCategorie(PlatusType):
     def __init__(
         self,
         naam    :   str,
+        kleur   :   Kleur,
         ) -> "HoofdCategorie":
         
         self.naam   =   naam
+        self.kleur  =   kleur
     
     def __repr__(self):
         return f"hoofdcategorie {self.naam}"
