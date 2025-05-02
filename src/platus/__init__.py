@@ -1,1 +1,1 @@
-from platus.gegevens.rekening import Bankrekening, Lening
+from .gegevens.rekening import Bankrekening, Lening
