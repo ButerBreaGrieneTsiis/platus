@@ -95,7 +95,7 @@ def weergave():
         lening_som                      =   lening_som.loc[:, lening_som.columns.intersection(["datumtijd", "eindsaldo"])]
         
         return bankrekening_som, lening_som
-    https://github.com/ButerBreaGrieneTsiis/platus/blob/main/assets/europa.geo.json
+    
     @st.cache_data
     def laden_kaart():
         return alt.Data(
