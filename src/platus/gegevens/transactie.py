@@ -373,7 +373,7 @@ class Transactie:
                     details["cpsp_uuid"]    =   cpsp_uuid
                     tijdelijk["medium_iban"]=   iban
                 
-                details     =   cls.verwerken_inkomen(derde_uuid, datumtijd, details, bedrag)
+                details     =   cls.verwerken_salaris(derde_uuid, datumtijd, details, bedrag)
             
             tijdelijk["naam"]   =   naam
             tijdelijk["bic"]    =   bic
@@ -644,37 +644,37 @@ class Transactie:
         return None        
     
     @staticmethod
-    def verwerken_inkomen(
+    def verwerken_salaris(
         derde_uuid: str,
         datumtijd: dt.datetime.date,
         details: dict,
         bedrag: int,
         ) -> Dict[str, int]:
         
-        inkomen_json    =   open_json("gegevens\\configuratie", "inkomen", "json")
+        salaris_json    =   open_json("gegevens\\configuratie", "salaris", "json")
         
-        if derde_uuid in inkomen_json.keys():
+        if derde_uuid in salaris_json.keys():
             
-            inkomen         =   inkomen_json[derde_uuid]
-            salarisstrook   =   open_json(f"{inkomen["pad"]}", dt.datetime.strftime(datumtijd, "%Y-%m"), "json")
+            salaris         =   salaris_json[derde_uuid]
+            salarisstrook   =   open_json(f"{salaris["pad"]}", dt.datetime.strftime(datumtijd, "%Y-%m"), "json")
             
             if int(round(100 * salarisstrook["netPay"]["value"])) == bedrag:
                 
-                details["inkomen"]  =   {}
+                details["salaris"]  =   {}
                 
-                for cat_uuid, trefwoorden in inkomen["inkomen"].items():
+                for cat_uuid, trefwoorden in salaris["salaris"].items():
                     for salarisstrook_dict in salarisstrook["earningsData"]:
                         if any([trefwoord in salarisstrook_dict["codeName"].casefold() for trefwoord in trefwoorden]):
-                            if cat_uuid not in details["inkomen"].keys():
-                                details["inkomen"][cat_uuid] = 0
-                            details["inkomen"][cat_uuid] += int(round(100 * salarisstrook_dict["value"]))
+                            if cat_uuid not in details["salaris"].keys():
+                                details["salaris"][cat_uuid] = 0
+                            details["salaris"][cat_uuid] += int(round(100 * salarisstrook_dict["value"]))
                 
-                for cat_uuid, trefwoorden in inkomen["uitgave"].items():
+                for cat_uuid, trefwoorden in salaris["uitgave"].items():
                     for salarisstrook_dict in salarisstrook["deductionsData"]:
                         if any([trefwoord in salarisstrook_dict["codeName"].casefold() for trefwoord in trefwoorden]):
-                            if cat_uuid not in details["inkomen"].keys():
-                                details["inkomen"][cat_uuid] = 0
-                            details["inkomen"][cat_uuid] -= int(round(100 * salarisstrook_dict["value"]))
+                            if cat_uuid not in details["salaris"].keys():
+                                details["salaris"][cat_uuid] = 0
+                            details["salaris"][cat_uuid] -= int(round(100 * salarisstrook_dict["value"]))
         
         return details
     
@@ -1171,3 +1171,32 @@ class Transactie:
             banken = open_json("gegevens\\derden", "bank", "json", class_mapper = (Bank, frozenset(("naam", "iban", "rekeningnummer", "synoniemen", "bic",)), "van_json"),)
             return banken[self.details.get("bank_uuid")]
         return None
+    
+    def salaris(
+        self,
+        categorieen :   Dict[str, Categorie]    =   None,
+        ) -> Dict[str, float] | None:
+        
+        if "salaris" in self.details.keys():
+            
+            categorieen = categorieen if categorieen is not None else open_json("gegevens\\configuratie", "categorie", "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "kleur", "trefwoorden",)), "van_json"),)
+            
+            salaris_dict = {
+                "datumtijd": [],
+                "bedrag": [],
+                "categorie": [],
+                "categorie_kleur": [],
+                "richting": [],
+                }
+            
+            for cat_uuid, bedrag in self.details["salaris"].items():
+                salaris_dict["datumtijd"].append(self.datumtijd)
+                salaris_dict["bedrag"].append(bedrag/100)
+                salaris_dict["categorie"].append(categorieen[cat_uuid].naam)
+                salaris_dict["categorie_kleur"].append(categorieen[cat_uuid].kleur.hex)
+                # salaris_dict["richting"].append("uitgave" if bedrag < 0 else "inkomst")
+            
+            return salaris_dict
+            
+        else:
+            return None

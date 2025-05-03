@@ -16,20 +16,20 @@ class Rekening:
     
     def __init__(
         self,
-        naam                :   str,
-        uuid                :   str,
-        actief_van          :   dt.datetime, 
-        transacties         :   dict                =   None,
-        actief              :   bool                =   True,
-        actief_tot          :   dt.datetime         =   None,
+        naam        :   str,
+        uuid        :   str,
+        actief_van  :   dt.datetime, 
+        transacties :   dict        =   None,
+        actief      :   bool        =   True,
+        actief_tot  :   dt.datetime =   None,
         ) -> "Rekening":
         
-        self.naam               =   naam
-        self.uuid               =   uuid
-        self.transacties        =   dict() if transacties is None else transacties
-        self.actief             =   actief
-        self.actief_van         =   actief_van
-        self.actief_tot         =   actief_tot
+        self.naam           =   naam
+        self.uuid           =   uuid
+        self.transacties    =   dict() if transacties is None else transacties
+        self.actief         =   actief
+        self.actief_van     =   actief_van
+        self.actief_tot     =   actief_tot
     
     def opslaan(self):
         opslaan_json(self.transacties, "gegevens\\rekeningen", self.uuid, "json", {"Transactie": "naar_json"})
@@ -55,7 +55,7 @@ class Rekening:
         locaties        =   open_json("gegevens\\configuratie",     "locatie",        "json", class_mapper = (Locatie, frozenset(("naam", "land_uuid", "breedtegraad", "lengtegraad", "synoniemen")), "van_json"),)
         landen          =   open_json("gegevens\\configuratie",     "land",           "json", class_mapper = (Land, frozenset(("naam", "iso_3166_1_alpha_3", "synoniemen")), "van_json"),)
         
-        return pd.DataFrame([transactie_rij for transactie_rij in [transactie.naar_tabel(
+        return pd.DataFrame(transactie.naar_tabel(
             personen,
             bedrijven,
             bankrekeningen,
@@ -65,37 +65,37 @@ class Rekening:
             hoofdcategorieen,
             locaties,
             landen,
-        ) for transactie in self.transactie_lijst] if transactie_rij is not None])
+        ) for transactie in self.transactie_lijst)
         
 class Bankrekening(Rekening): 
     
     def __init__(
         self,
-        naam               :   str,
-        bank_uuid          :   str,
-        pad                :   str,
-        rekeningnummer     :   str,
-        uuid               :   str,
-        actief_van         :   dt.datetime, 
-        iban               :   str         =   None,
-        transacties        :   dict        =   None,
-        actief             :   bool        =   True,
-        actief_tot         :   dt.datetime =   None,
+        naam            :   str,
+        bank_uuid       :   str,
+        pad             :   str,
+        rekeningnummer  :   str,
+        uuid            :   str,
+        actief_van      :   dt.datetime, 
+        iban            :   str         =   None,
+        transacties     :   dict        =   None,
+        actief          :   bool        =   True,
+        actief_tot      :   dt.datetime =   None,
         ):
         
         super().__init__(
-            naam            =   naam,
-            uuid            =   uuid,
-            actief_van      =   actief_van,
-            transacties     =   transacties,
-            actief          =   actief,
-            actief_tot      =   actief_tot,
+            naam        =   naam,
+            uuid        =   uuid,
+            actief_van  =   actief_van,
+            transacties =   transacties,
+            actief      =   actief,
+            actief_tot  =   actief_tot,
             )
         
-        self.bank_uuid          =   bank_uuid
-        self.pad                =   pad
-        self.rekeningnummer     =   rekeningnummer
-        self.iban               =   iban
+        self.bank_uuid      =   bank_uuid
+        self.pad            =   pad
+        self.rekeningnummer =   rekeningnummer
+        self.iban           =   iban
     
     @classmethod
     def openen(
@@ -170,6 +170,27 @@ class Bankrekening(Rekening):
         
         self.transacties[uuid]  =   transactie
         return self
+    
+    def salaris(
+        self
+        ) -> pd.DataFrame:
+        
+        categorieen = open_json("gegevens\\configuratie", "categorie", "json", class_mapper = (Categorie, frozenset(("naam", "hoofdcat_uuid", "kleur", "trefwoorden",)), "van_json"),)
+        
+        return pd.DataFrame(
+            [
+                transactie_rij for transactie_rij in [
+                    transactie.salaris(categorieen) for transactie in self.transactie_lijst
+                    ] if transactie_rij is not None
+                ]
+        ).explode(
+            [
+                "datumtijd",
+                "bedrag",
+                "categorie",
+                "categorie_kleur",
+                ],
+            )
 
 class Lening(Rekening):
     
@@ -186,12 +207,12 @@ class Lening(Rekening):
         ):
             
             super().__init__(
-                naam            =   naam,
-                uuid            =   uuid,
-                actief_van      =   actief_van,
-                transacties     =   transacties,
-                actief          =   actief,
-                actief_tot      =   actief_tot,
+                naam        =   naam,
+                uuid        =   uuid,
+                actief_van  =   actief_van,
+                transacties =   transacties,
+                actief      =   actief,
+                actief_tot  =   actief_tot,
                 )
             
             self.schuldeiser_uuid   =   schuldeiser_uuid
