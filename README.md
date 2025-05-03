@@ -35,7 +35,7 @@ weergave()
 En deze dan vervolgens uit te voeren als:
 
 ```
-streamlit het_bovenstaande_bestand.py
+streamlit run het_bovenstaande_bestand.py
 ```
 
 De `Rapporteren` module dient op een gelijke manier als `Weergave` uitgevoerd te worden: verander enkel `from platus.weergave import weergave` naar `from platus.rapport import rapporteren` en `weergave()` naar `rapportern()`.
