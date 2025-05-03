@@ -82,16 +82,10 @@ def weergave():
         
         return weergave_configuratie, gegevens_benelux
     
-    # if "domein_2" not in st.session_state:
-    #     st.session_state["domein_2"] = dt.datetime.today().year - 1
-    
-    # if "domein_3_jaar" not in st.session_state:
-    #     st.session_state["domein_3_jaar"] = dt.datetime.today().year
-    
-    bankrekeningen = laden_bankrekeningen()
-    leningen = laden_leningen()
-    bankrekening_som, lening_som = maken_som(bankrekeningen, leningen)
-    weergave_configuratie, gegevens_benelux = laden()
+    bankrekeningen                          =   laden_bankrekeningen()
+    leningen                                =   laden_leningen()
+    bankrekening_som, lening_som            =   maken_som(bankrekeningen, leningen)
+    weergave_configuratie, gegevens_benelux =   laden()
     
     tabel_betaalrekening = bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]]
     
@@ -122,6 +116,7 @@ def weergave():
         st.header(
             body = "overzicht",
             )
+        
         invoer_domein_1 = st.empty()
         figuur_inkomsten = st.empty()
         figuur_uitgaven = st.empty()
@@ -130,14 +125,18 @@ def weergave():
         st.header(
             body = "jaar",
             )
+        
         invoer_domein_2 = st.empty()
         kolom_2_1_1, kolom_2_1_2 = st.columns(2)
+        
         with kolom_2_1_1:
             figuur_jaar_taartdiagram_inkomsten = st.empty()
+        
         with kolom_2_1_2:
             figuur_jaar_taartdiagram_uitgaven = st.empty()
         
         kolom_2_2_1, kolom_2_2_2, kolom_2_2_3, kolom_2_2_4 = st.columns(4)
+        
         with kolom_2_2_1: meting_jaar_inkomsten = st.empty()
         with kolom_2_2_2: meting_jaar_salaris = st.empty()
         with kolom_2_2_3: meting_jaar_uitgaven = st.empty()
@@ -150,14 +149,17 @@ def weergave():
             body = "maand",
             )
         kolom_3_1_1, kolom_3_1_2 = st.columns(2)
+        
         with kolom_3_1_1:
             invoer_domein_3_1 = st.empty()
             figuur_maand_taartdiagram_inkomsten = st.empty()
+        
         with kolom_3_1_2:
             invoer_domein_3_2 = st.empty()
             figuur_maand_taartdiagram_uitgaven = st.empty()
         
         kolom_3_2_1, kolom_3_2_2, kolom_3_2_3, kolom_3_2_4 = st.columns(4)
+        
         with kolom_3_2_1: meting_jaarmaand_inkomsten = st.empty()
         with kolom_3_2_2: meting_jaarmaand_salaris = st.empty()
         with kolom_3_2_3: meting_jaarmaand_uitgaven = st.empty()
@@ -169,6 +171,7 @@ def weergave():
         st.header(
             body = "kaart",
             )
+        
         figuur_kaart_europa = st.empty()
         figuur_saldo = st.empty()
         
@@ -1043,21 +1046,25 @@ def weergave():
         & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
         & (tabel_betaalrekening["bedrag"] > 0.0)
     ]["bedrag"].sum()
+    
     waarde_inkomsten_jaar_vorig = tabel_betaalrekening.loc[
         (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"] - 1)
         & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
         & (tabel_betaalrekening["bedrag"] > 0.0)
     ]["bedrag"].sum()
+    
     waarde_inkomsten_jaar_verschil = waarde_inkomsten_jaar - waarde_inkomsten_jaar_vorig
     
     waarde_salaris_jaar = tabel_betaalrekening.loc[
         (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"])
         & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
     ]["bedrag"].sum()
+    
     waarde_salaris_jaar_vorig = tabel_betaalrekening.loc[
         (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"] - 1)
         & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
     ]["bedrag"].sum()
+    
     waarde_salaris_jaar_verschil = waarde_salaris_jaar - waarde_salaris_jaar_vorig
     
     waarde_uitgaven_jaar = tabel_betaalrekening.loc[
@@ -1065,101 +1072,113 @@ def weergave():
         & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
         & (tabel_betaalrekening["bedrag"] < 0.0)
     ]["bedrag"].sum()
+    
     waarde_uitgaven_jaar_vorig = tabel_betaalrekening.loc[
         (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"] - 1)
         & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
         & (tabel_betaalrekening["bedrag"] < 0.0)
     ]["bedrag"].sum()
+    
     waarde_uitgaven_jaar_verschil = waarde_uitgaven_jaar - waarde_uitgaven_jaar_vorig
     
-    waarde_netto_jaar = waarde_inkomsten_jaar + waarde_uitgaven_jaar
-    waarde_netto_jaar_vorig = waarde_inkomsten_jaar_vorig + waarde_uitgaven_jaar_vorig
-    waarde_netto_jaar_verschil = waarde_netto_jaar - waarde_netto_jaar_vorig
+    waarde_netto_jaar           =   waarde_inkomsten_jaar + waarde_uitgaven_jaar
+    waarde_netto_jaar_vorig     =   waarde_inkomsten_jaar_vorig + waarde_uitgaven_jaar_vorig
+    waarde_netto_jaar_verschil  =   waarde_netto_jaar - waarde_netto_jaar_vorig
     
-    tekst_inkomsten_jaar = toon_bedrag(round(waarde_inkomsten_jaar, 2))
-    tekst_inkomsten_jaar_verschil = toon_bedrag(round(waarde_inkomsten_jaar_verschil, 2))
-    tekst_salaris_jaar = toon_bedrag(round(waarde_salaris_jaar, 2))
-    tekst_salaris_jaar_verschil = toon_bedrag(round(waarde_salaris_jaar_verschil, 2))
-    tekst_uitgaven_jaar = toon_bedrag(round(waarde_uitgaven_jaar, 2))
-    tekst_uitgaven_jaar_verschil = toon_bedrag(round(waarde_uitgaven_jaar_verschil, 2))
-    tekst_netto_jaar = toon_bedrag(round(waarde_netto_jaar, 2))
-    tekst_netto_jaar_verschil = toon_bedrag(round(waarde_netto_jaar_verschil, 2))
+    tekst_inkomsten_jaar            =   toon_bedrag(round(waarde_inkomsten_jaar, 2))
+    tekst_inkomsten_jaar_verschil   =   toon_bedrag(round(waarde_inkomsten_jaar_verschil, 2))
+    tekst_salaris_jaar              =   toon_bedrag(round(waarde_salaris_jaar, 2))
+    tekst_salaris_jaar_verschil     =   toon_bedrag(round(waarde_salaris_jaar_verschil, 2))
+    tekst_uitgaven_jaar             =   toon_bedrag(round(waarde_uitgaven_jaar, 2))
+    tekst_uitgaven_jaar_verschil    =   toon_bedrag(round(waarde_uitgaven_jaar_verschil, 2))
+    tekst_netto_jaar                =   toon_bedrag(round(waarde_netto_jaar, 2))
+    tekst_netto_jaar_verschil       =   toon_bedrag(round(waarde_netto_jaar_verschil, 2))
+    
     
     waarde_inkomsten_jaarmaand = tabel_betaalrekening.loc[
         (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
-        & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
-        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
-        & (tabel_betaalrekening["bedrag"] > 0.0)
+    &   (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
+    &   (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+    &   (tabel_betaalrekening["bedrag"] > 0.0)
     ]["bedrag"].sum()
+    
     if st.session_state["domein_3_maand"] == 1:
         waarde_inkomsten_jaarmaand_vorig = tabel_betaalrekening.loc[
             (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"] - 1)
-            & (tabel_betaalrekening["datumtijd"].dt.month == 12)
-            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
-            & (tabel_betaalrekening["bedrag"] > 0.0)
+        &   (tabel_betaalrekening["datumtijd"].dt.month == 12)
+        &   (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        &   (tabel_betaalrekening["bedrag"] > 0.0)
         ]["bedrag"].sum()
     else:
         waarde_inkomsten_jaarmaand_vorig = tabel_betaalrekening.loc[
             (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
-            & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
-            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
-            & (tabel_betaalrekening["bedrag"] > 0.0)
+        &   (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
+        &   (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        &   (tabel_betaalrekening["bedrag"] > 0.0)
         ]["bedrag"].sum()
+    
     waarde_inkomsten_jaarmaand_verschil = waarde_inkomsten_jaarmaand - waarde_inkomsten_jaarmaand_vorig
     
     waarde_salaris_jaarmaand = tabel_betaalrekening.loc[
         (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
-        & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
-        & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+    &   (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
+    &   (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
     ]["bedrag"].sum()
+    
     if st.session_state["domein_3_maand"] == 1:
         waarde_salaris_jaarmaand_vorig = tabel_betaalrekening.loc[
             (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"] - 1)
-            & (tabel_betaalrekening["datumtijd"].dt.month == 12)
-            & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+        &   (tabel_betaalrekening["datumtijd"].dt.month == 12)
+        &   (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
         ]["bedrag"].sum()
     else:
         waarde_salaris_jaarmaand_vorig = tabel_betaalrekening.loc[
             (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
-            & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
-            & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+        &   (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
+        &   (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
         ]["bedrag"].sum()
+    
     waarde_salaris_jaarmaand_verschil = waarde_salaris_jaarmaand - waarde_salaris_jaarmaand_vorig
     
     waarde_uitgaven_jaarmaand = tabel_betaalrekening.loc[
         (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
-        & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
-        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
-        & (tabel_betaalrekening["bedrag"] < 0.0)
+    &   (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
+    &   (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+    &   (tabel_betaalrekening["bedrag"] < 0.0)
     ]["bedrag"].sum()
+    
     if st.session_state["domein_3_maand"] == 1:
         waarde_uitgaven_jaarmaand_vorig = tabel_betaalrekening.loc[
             (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"] - 1)
-            & (tabel_betaalrekening["datumtijd"].dt.month == 12)
-            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
-            & (tabel_betaalrekening["bedrag"] < 0.0)
+        &   (tabel_betaalrekening["datumtijd"].dt.month == 12)
+        &   (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        &   (tabel_betaalrekening["bedrag"] < 0.0)
         ]["bedrag"].sum()
     else:
         waarde_uitgaven_jaarmaand_vorig = tabel_betaalrekening.loc[
             (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
-            & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
-            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
-            & (tabel_betaalrekening["bedrag"] < 0.0)
+        &   (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
+        &   (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        &   (tabel_betaalrekening["bedrag"] < 0.0)
         ]["bedrag"].sum()
+    
     waarde_uitgaven_jaarmaand_verschil = waarde_uitgaven_jaarmaand - waarde_uitgaven_jaarmaand_vorig
     
-    waarde_netto_jaarmaand = waarde_inkomsten_jaarmaand + waarde_uitgaven_jaarmaand
-    waarde_netto_jaarmaand_vorig = waarde_inkomsten_jaarmaand_vorig + waarde_uitgaven_jaarmaand_vorig
-    waarde_netto_jaarmaand_verschil = waarde_netto_jaarmaand - waarde_netto_jaarmaand_vorig
+    waarde_netto_jaarmaand          =   waarde_inkomsten_jaarmaand + waarde_uitgaven_jaarmaand
+    waarde_netto_jaarmaand_vorig    =   waarde_inkomsten_jaarmaand_vorig + waarde_uitgaven_jaarmaand_vorig
+    waarde_netto_jaarmaand_verschil =   waarde_netto_jaarmaand - waarde_netto_jaarmaand_vorig
     
-    tekst_inkomsten_jaarmaand = toon_bedrag(round(waarde_inkomsten_jaarmaand, 2))
-    tekst_inkomsten_jaarmaand_verschil = toon_bedrag(round(waarde_inkomsten_jaarmaand_verschil, 2))
-    tekst_salaris_jaarmaand = toon_bedrag(round(waarde_salaris_jaarmaand, 2))
-    tekst_salaris_jaarmaand_verschil = toon_bedrag(round(waarde_salaris_jaarmaand_verschil, 2))
-    tekst_uitgaven_jaarmaand = toon_bedrag(round(waarde_uitgaven_jaarmaand, 2))
-    tekst_uitgaven_jaarmaand_verschil = toon_bedrag(round(waarde_uitgaven_jaarmaand_verschil, 2))
-    tekst_netto_jaarmaand = toon_bedrag(round(waarde_netto_jaarmaand, 2))
-    tekst_netto_jaarmaand_verschil = toon_bedrag(round(waarde_netto_jaarmaand_verschil, 2))
+    tekst_inkomsten_jaarmaand           =   toon_bedrag(round(waarde_inkomsten_jaarmaand, 2))
+    tekst_inkomsten_jaarmaand_verschil  =   toon_bedrag(round(waarde_inkomsten_jaarmaand_verschil, 2))
+    tekst_salaris_jaarmaand             =   toon_bedrag(round(waarde_salaris_jaarmaand, 2))
+    tekst_salaris_jaarmaand_verschil    =   toon_bedrag(round(waarde_salaris_jaarmaand_verschil, 2))
+    tekst_uitgaven_jaarmaand            =   toon_bedrag(round(waarde_uitgaven_jaarmaand, 2))
+    tekst_uitgaven_jaarmaand_verschil   =   toon_bedrag(round(waarde_uitgaven_jaarmaand_verschil, 2))
+    tekst_netto_jaarmaand               =   toon_bedrag(round(waarde_netto_jaarmaand, 2))
+    tekst_netto_jaarmaand_verschil      =   toon_bedrag(round(waarde_netto_jaarmaand_verschil, 2))
+    
+    
+    # FIGUREN TOEKENNEN
     
     figuur_saldo.altair_chart(alt.layer(*charts_bankrekening_saldo) + alt.layer(*charts_lening_saldo))
     figuur_inkomsten.altair_chart(grafiek_oppervlakte_inkomsten)
