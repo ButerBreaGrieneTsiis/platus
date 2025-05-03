@@ -25,6 +25,24 @@ def weergave():
                 padding-right: 2rem;
                 }
             
+            header {visibility: hidden;}
+            
+            div[data-testid="stMainBlockContainer "] > div {
+                padding-top: 0.0rem;
+                }
+                
+            div[data-testid="stVerticalBlock "] > div {
+                gap: 0.0rem;
+                }
+            
+            div[data-testid="stMainBlockContainer "] > div {
+                padding-top: 0.0rem;
+                }
+            
+            h2[] > h2 {
+                padding: 0.0rem;
+                }
+                
             div[data-testid="stMetricLabel"] > div {
                 font-size: 0.75rem;
                 }
@@ -714,6 +732,7 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
+        height = 275,
         )
     
     grafiek_jaar_taartdiagram_uitgaven = alt.Chart(
@@ -761,6 +780,7 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
+        height = 275,
         )
     
     grafiek_jaar_salaris_inkomsten = alt.Chart(
@@ -1032,6 +1052,7 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
+        height = 275,
         )
     
     grafiek_jaarmaand_taartdiagram_uitgaven = alt.Chart(
@@ -1079,6 +1100,7 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
+        height = 275,
         )
     
     grafiek_jaarmaand_salaris_inkomsten = alt.Chart(
