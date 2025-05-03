@@ -7,8 +7,8 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from grienetsiis.gereedschap import jaar_maand_iterator
-from grienetsiis.kleuren import standaard, wit_gebroken
+from grienetsiis.gereedschap import jaar_maand_iterator, toon_bedrag
+from grienetsiis.kleuren import wit_gebroken
 from grienetsiis.lezerschrijver import open_json
 from ..gegevens.rekening import Bankrekening, Lening
 
@@ -24,6 +24,20 @@ def weergave():
                 padding-left: 2rem;
                 padding-right: 2rem;
                 }
+            
+            div[data-testid="stMetricLabel"] > div {
+                font-size: 0.75rem;
+                }
+            
+            div[data-testid="stMetricValue"] > div {
+                font-size: 1.0rem;
+                }
+            
+            # div[data-testid="stMetricDelta"] > div {
+                font-size: 0.5rem;
+                # color: #2eab7b;
+                }
+            
         </style>
         """,
         unsafe_allow_html = True,
@@ -79,11 +93,13 @@ def weergave():
     bankrekening_som, lening_som = maken_som(bankrekeningen, leningen)
     weergave_configuratie, gegevens_benelux = laden()
     
+    tabel_betaalrekening = bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]]
+    
     locale = { # https://github.com/streamlit/streamlit/issues/1161#issuecomment-1873804437
         "embedOptions": {
             "formatLocale": {      # https://github.com/d3/d3-format/blob/main/locale/nl-NL.json
                 "decimal": ",",
-                "thousands": ".",
+                "thousands": u"\u2009",
                 "grouping": [3],
                 "currency": ["€\u00a0", ""],
                 },
@@ -105,7 +121,6 @@ def weergave():
     with kolom_1:
         st.header(
             body = "overzicht",
-            divider = True,
             )
         invoer_domein_1 = st.empty()
         figuur_inkomsten = st.empty()
@@ -114,34 +129,45 @@ def weergave():
     with kolom_2:
         st.header(
             body = "jaar",
-            divider = True,
             )
         invoer_domein_2 = st.empty()
-        kolom_2_1, kolom_2_2 = st.columns(2)
-        with kolom_2_1:
+        kolom_2_1_1, kolom_2_1_2 = st.columns(2)
+        with kolom_2_1_1:
             figuur_jaar_taartdiagram_inkomsten = st.empty()
-        with kolom_2_2:
+        with kolom_2_1_2:
             figuur_jaar_taartdiagram_uitgaven = st.empty()
+        
+        kolom_2_2_1, kolom_2_2_2, kolom_2_2_3, kolom_2_2_4 = st.columns(4)
+        with kolom_2_2_1: meting_jaar_inkomsten = st.empty()
+        with kolom_2_2_2: meting_jaar_salaris = st.empty()
+        with kolom_2_2_3: meting_jaar_uitgaven = st.empty()
+        with kolom_2_2_4: meting_jaar_netto = st.empty()
+        
         figuur_jaar_staafdiagram = st.empty()
     
     with kolom_3:
         st.header(
             body = "maand",
-            divider = True,
             )
-        kolom_3_1, kolom_3_2 = st.columns(2)
-        with kolom_3_1:
+        kolom_3_1_1, kolom_3_1_2 = st.columns(2)
+        with kolom_3_1_1:
             invoer_domein_3_1 = st.empty()
             figuur_maand_taartdiagram_inkomsten = st.empty()
-        with kolom_3_2:
+        with kolom_3_1_2:
             invoer_domein_3_2 = st.empty()
             figuur_maand_taartdiagram_uitgaven = st.empty()
+        
+        kolom_3_2_1, kolom_3_2_2, kolom_3_2_3, kolom_3_2_4 = st.columns(4)
+        with kolom_3_2_1: meting_jaarmaand_inkomsten = st.empty()
+        with kolom_3_2_2: meting_jaarmaand_salaris = st.empty()
+        with kolom_3_2_3: meting_jaarmaand_uitgaven = st.empty()
+        with kolom_3_2_4: meting_jaarmaand_netto = st.empty()
+        
         figuur_maand_staafdiagram = st.empty()
     
     with kolom_4:
         st.header(
             body = "kaart",
-            divider = True,
             )
         figuur_kaart_europa = st.empty()
         figuur_saldo = st.empty()
@@ -224,7 +250,7 @@ def weergave():
                         domainMin = 0,
                         ),
                     ),
-                color   =   alt.value(getattr(standaard, weergave_configuratie["rekeningen"]["kleuren"][bankrekening_uuid]).hex),
+                color   =   alt.value(weergave_configuratie["rekeningen"]["kleuren"][bankrekening_uuid]),
                 tooltip =   [
                     alt.Tooltip(
                         "datumtijd:T",
@@ -254,7 +280,7 @@ def weergave():
         ).mark_line(
             clip = True,
             interpolate = "step-after",
-            strokeOpacity = 0.2,
+            strokeOpacity = 0.1,
         ).encode(
             x = alt.X(
                 field = "datumtijd",
@@ -318,7 +344,7 @@ def weergave():
                         format = "$,.2f",
                         ),
                     ),
-                color   =   alt.value(getattr(standaard, weergave_configuratie["rekeningen"]["kleuren"][lening_uuid]).hex),
+                color   =   alt.value(weergave_configuratie["rekeningen"]["kleuren"][lening_uuid]),
                 tooltip =   [
                     alt.Tooltip(
                         "datumtijd:T",
@@ -348,7 +374,7 @@ def weergave():
         ).mark_line(
             clip = True,
             interpolate = "step-after",
-            strokeOpacity = 0.2,
+            strokeOpacity = 0.1,
         ).encode(
             x = alt.X(
                 field = "datumtijd",
@@ -390,7 +416,7 @@ def weergave():
         )
     
     grafiek_oppervlakte_inkomsten = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
         title = alt.Title(
             text = "inkomsten",
             anchor = "middle",
@@ -452,7 +478,7 @@ def weergave():
         )
     
     grafiek_oppervlakte_uitgaven = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
         title = alt.Title(
             text = "uitgaven",
             anchor = "middle",
@@ -517,7 +543,7 @@ def weergave():
         )
     
     grafiek_jaar_staafdiagram_inkomsten = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
     ).mark_bar(
     ).encode(
         x = alt.X(
@@ -531,9 +557,6 @@ def weergave():
             field = "bedrag",
             aggregate = "sum",
             type = "quantitative",
-            impute = {
-                "value": 0,
-                },
             axis = alt.Axis(
                 title = None,
                 format = "$,.2f",
@@ -576,7 +599,7 @@ def weergave():
         )
     
     grafiek_jaar_staafdiagram_uitgaven = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
     ).mark_bar(
     ).encode(
         x = alt.X(
@@ -590,9 +613,6 @@ def weergave():
             field = "bedrag",
             aggregate = "sum",
             type = "quantitative",
-            impute = {
-                "value": 0,
-                },
             axis = alt.Axis(
                 title = None,
                 format = "$,.2f",
@@ -636,7 +656,7 @@ def weergave():
         )
     
     grafiek_jaar_taartdiagram_inkomsten = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
         title = alt.Title(
             text = "inkomsten",
             anchor = "middle",
@@ -684,7 +704,7 @@ def weergave():
         )
     
     grafiek_jaar_taartdiagram_uitgaven = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
         title = alt.Title(
             text = "uitgaven",
             anchor = "middle",
@@ -731,7 +751,7 @@ def weergave():
         )
     
     grafiek_maand_staafdiagram_inkomsten = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
     ).mark_bar(
     ).encode(
         x = alt.X(
@@ -745,9 +765,6 @@ def weergave():
             field = "bedrag",
             aggregate = "sum",
             type = "quantitative",
-            impute = {
-                "value": 0,
-                },
             axis = alt.Axis(
                 title = None,
                 format = "$,.2f",
@@ -790,7 +807,7 @@ def weergave():
         )
     
     grafiek_maand_staafdiagram_uitgaven = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
     ).mark_bar(
     ).encode(
         x = alt.X(
@@ -804,9 +821,6 @@ def weergave():
             field = "bedrag",
             aggregate = "sum",
             type = "quantitative",
-            impute = {
-                "value": 0,
-                },
             axis = alt.Axis(
                 title = None,
                 format = "$,.2f",
@@ -850,7 +864,7 @@ def weergave():
         )
     
     grafiek_maand_taartdiagram_inkomsten = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
         title = alt.Title(
             text = "inkomsten",
             anchor = "middle",
@@ -898,7 +912,7 @@ def weergave():
         )
     
     grafiek_maand_taartdiagram_uitgaven = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+        tabel_betaalrekening,
         title = alt.Title(
             text = "uitgaven",
             anchor = "middle",
@@ -944,14 +958,11 @@ def weergave():
         usermeta = locale,
         )
     
-    grondkaart_benelux = alt.Chart(gegevens_benelux).mark_geoshape(
-        stroke = wit_gebroken.hex,
+    kaart_grondkaart = alt.Chart(gegevens_benelux).mark_geoshape(
+        fill = weergave_configuratie["stijl"]["kaart_land"],
+        stroke = weergave_configuratie["stijl"]["kaart_grens"],
         strokeWidth = 1.5,
     ).encode(
-        # color = alt.Color("properties.name:N", legend = None),
-        # tooltip = [
-        #     alt.Tooltip("properties.name_nl:N", title = "land")
-        # ]
     ).project(
         type = "mercator",
         scale = 6000,
@@ -961,13 +972,13 @@ def weergave():
         height = 500,
     )
     
-    pinbas_benelux = alt.Chart(
-        bankrekeningen[weergave_configuratie["betaalrekening"]["rekening"]],
+    kaart_pinbetaling = alt.Chart(
+        tabel_betaalrekening,
     ).mark_circle(
-        fillOpacity = 0.3,
-        fill = standaard.rood.hex,
+        fillOpacity = 0.5,
+        fill = weergave_configuratie["stijl"]["kaart_locatie"],
         strokeOpacity = 1.0,
-        stroke = standaard.rood.hex,
+        stroke = weergave_configuratie["stijl"]["kaart_locatie"],
     ).encode(
         latitude = "breedtegraad:Q",
         longitude = "lengtegraad:Q",
@@ -986,7 +997,7 @@ def weergave():
                 title = "locatie",
                 ),
             alt.Tooltip(
-                field = "bedrag",
+                field = "bedrag_abs",
                 type = "quantitative",
                 aggregate = "sum",
                 title = "bedrag",
@@ -994,6 +1005,8 @@ def weergave():
                 ),
             ],
         color = alt.value(wit_gebroken.hex),
+    ).transform_calculate(
+        bedrag_abs = alt.expr.abs(alt.datum.bedrag),
     ).transform_filter(
         alt.FieldRangePredicate(
             field = "datumtijd",
@@ -1025,13 +1038,179 @@ def weergave():
         usermeta = locale,
         )
     
+    waarde_inkomsten_jaar = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"])
+        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        & (tabel_betaalrekening["bedrag"] > 0.0)
+    ]["bedrag"].sum()
+    waarde_inkomsten_jaar_vorig = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"] - 1)
+        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        & (tabel_betaalrekening["bedrag"] > 0.0)
+    ]["bedrag"].sum()
+    waarde_inkomsten_jaar_verschil = waarde_inkomsten_jaar - waarde_inkomsten_jaar_vorig
+    
+    waarde_salaris_jaar = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"])
+        & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+    ]["bedrag"].sum()
+    waarde_salaris_jaar_vorig = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"] - 1)
+        & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+    ]["bedrag"].sum()
+    waarde_salaris_jaar_verschil = waarde_salaris_jaar - waarde_salaris_jaar_vorig
+    
+    waarde_uitgaven_jaar = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"])
+        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        & (tabel_betaalrekening["bedrag"] < 0.0)
+    ]["bedrag"].sum()
+    waarde_uitgaven_jaar_vorig = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_2"] - 1)
+        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        & (tabel_betaalrekening["bedrag"] < 0.0)
+    ]["bedrag"].sum()
+    waarde_uitgaven_jaar_verschil = waarde_uitgaven_jaar - waarde_uitgaven_jaar_vorig
+    
+    waarde_netto_jaar = waarde_inkomsten_jaar + waarde_uitgaven_jaar
+    waarde_netto_jaar_vorig = waarde_inkomsten_jaar_vorig + waarde_uitgaven_jaar_vorig
+    waarde_netto_jaar_verschil = waarde_netto_jaar - waarde_netto_jaar_vorig
+    
+    tekst_inkomsten_jaar = toon_bedrag(round(waarde_inkomsten_jaar, 2))
+    tekst_inkomsten_jaar_verschil = toon_bedrag(round(waarde_inkomsten_jaar_verschil, 2))
+    tekst_salaris_jaar = toon_bedrag(round(waarde_salaris_jaar, 2))
+    tekst_salaris_jaar_verschil = toon_bedrag(round(waarde_salaris_jaar_verschil, 2))
+    tekst_uitgaven_jaar = toon_bedrag(round(waarde_uitgaven_jaar, 2))
+    tekst_uitgaven_jaar_verschil = toon_bedrag(round(waarde_uitgaven_jaar_verschil, 2))
+    tekst_netto_jaar = toon_bedrag(round(waarde_netto_jaar, 2))
+    tekst_netto_jaar_verschil = toon_bedrag(round(waarde_netto_jaar_verschil, 2))
+    
+    waarde_inkomsten_jaarmaand = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
+        & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
+        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        & (tabel_betaalrekening["bedrag"] > 0.0)
+    ]["bedrag"].sum()
+    if st.session_state["domein_3_maand"] == 1:
+        waarde_inkomsten_jaarmaand_vorig = tabel_betaalrekening.loc[
+            (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"] - 1)
+            & (tabel_betaalrekening["datumtijd"].dt.month == 12)
+            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+            & (tabel_betaalrekening["bedrag"] > 0.0)
+        ]["bedrag"].sum()
+    else:
+        waarde_inkomsten_jaarmaand_vorig = tabel_betaalrekening.loc[
+            (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
+            & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
+            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+            & (tabel_betaalrekening["bedrag"] > 0.0)
+        ]["bedrag"].sum()
+    waarde_inkomsten_jaarmaand_verschil = waarde_inkomsten_jaarmaand - waarde_inkomsten_jaarmaand_vorig
+    
+    waarde_salaris_jaarmaand = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
+        & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
+        & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+    ]["bedrag"].sum()
+    if st.session_state["domein_3_maand"] == 1:
+        waarde_salaris_jaarmaand_vorig = tabel_betaalrekening.loc[
+            (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"] - 1)
+            & (tabel_betaalrekening["datumtijd"].dt.month == 12)
+            & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+        ]["bedrag"].sum()
+    else:
+        waarde_salaris_jaarmaand_vorig = tabel_betaalrekening.loc[
+            (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
+            & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
+            & (tabel_betaalrekening["hoofdcategorie"] == weergave_configuratie["betaalrekening"]["hoofdcategorie_waarde_salaris"])
+        ]["bedrag"].sum()
+    waarde_salaris_jaarmaand_verschil = waarde_salaris_jaarmaand - waarde_salaris_jaarmaand_vorig
+    
+    waarde_uitgaven_jaarmaand = tabel_betaalrekening.loc[
+        (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
+        & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"])
+        & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+        & (tabel_betaalrekening["bedrag"] < 0.0)
+    ]["bedrag"].sum()
+    if st.session_state["domein_3_maand"] == 1:
+        waarde_uitgaven_jaarmaand_vorig = tabel_betaalrekening.loc[
+            (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"] - 1)
+            & (tabel_betaalrekening["datumtijd"].dt.month == 12)
+            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+            & (tabel_betaalrekening["bedrag"] < 0.0)
+        ]["bedrag"].sum()
+    else:
+        waarde_uitgaven_jaarmaand_vorig = tabel_betaalrekening.loc[
+            (tabel_betaalrekening["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
+            & (tabel_betaalrekening["datumtijd"].dt.month == st.session_state["domein_3_maand"] - 1)
+            & (tabel_betaalrekening["categorie"] != weergave_configuratie["betaalrekening"]["categorie_waarde_uitsluiten"])
+            & (tabel_betaalrekening["bedrag"] < 0.0)
+        ]["bedrag"].sum()
+    waarde_uitgaven_jaarmaand_verschil = waarde_uitgaven_jaarmaand - waarde_uitgaven_jaarmaand_vorig
+    
+    waarde_netto_jaarmaand = waarde_inkomsten_jaarmaand + waarde_uitgaven_jaarmaand
+    waarde_netto_jaarmaand_vorig = waarde_inkomsten_jaarmaand_vorig + waarde_uitgaven_jaarmaand_vorig
+    waarde_netto_jaarmaand_verschil = waarde_netto_jaarmaand - waarde_netto_jaarmaand_vorig
+    
+    tekst_inkomsten_jaarmaand = toon_bedrag(round(waarde_inkomsten_jaarmaand, 2))
+    tekst_inkomsten_jaarmaand_verschil = toon_bedrag(round(waarde_inkomsten_jaarmaand_verschil, 2))
+    tekst_salaris_jaarmaand = toon_bedrag(round(waarde_salaris_jaarmaand, 2))
+    tekst_salaris_jaarmaand_verschil = toon_bedrag(round(waarde_salaris_jaarmaand_verschil, 2))
+    tekst_uitgaven_jaarmaand = toon_bedrag(round(waarde_uitgaven_jaarmaand, 2))
+    tekst_uitgaven_jaarmaand_verschil = toon_bedrag(round(waarde_uitgaven_jaarmaand_verschil, 2))
+    tekst_netto_jaarmaand = toon_bedrag(round(waarde_netto_jaarmaand, 2))
+    tekst_netto_jaarmaand_verschil = toon_bedrag(round(waarde_netto_jaarmaand_verschil, 2))
+    
     figuur_saldo.altair_chart(alt.layer(*charts_bankrekening_saldo) + alt.layer(*charts_lening_saldo))
     figuur_inkomsten.altair_chart(grafiek_oppervlakte_inkomsten)
     figuur_uitgaven.altair_chart(grafiek_oppervlakte_uitgaven)
-    figuur_jaar_staafdiagram.altair_chart(grafiek_jaar_staafdiagram)
     figuur_jaar_taartdiagram_inkomsten.altair_chart(grafiek_jaar_taartdiagram_inkomsten)
+    
+    meting_jaar_inkomsten.metric(
+        label = "inkomsten",
+        value = tekst_inkomsten_jaar,
+        delta = tekst_inkomsten_jaar_verschil,
+        )
+    meting_jaar_salaris.metric(
+        label = "waarvan salaris",
+        value = tekst_salaris_jaar,
+        delta = tekst_salaris_jaar_verschil,
+        )
+    meting_jaar_uitgaven.metric(
+        label = "uitgaven",
+        value = tekst_uitgaven_jaar,
+        delta = tekst_uitgaven_jaar_verschil,
+        )
+    meting_jaar_netto.metric(
+        label = "winst",
+        value = tekst_netto_jaar,
+        delta = tekst_netto_jaar_verschil,
+        )
+    
+    meting_jaarmaand_inkomsten.metric(
+        label = "inkomsten",
+        value = tekst_inkomsten_jaarmaand,
+        delta = tekst_inkomsten_jaarmaand_verschil,
+        )
+    meting_jaarmaand_salaris.metric(
+        label = "waarvan salaris",
+        value = tekst_salaris_jaarmaand,
+        delta = tekst_salaris_jaarmaand_verschil,
+        )
+    meting_jaarmaand_uitgaven.metric(
+        label = "uitgaven",
+        value = tekst_uitgaven_jaarmaand,
+        delta = tekst_uitgaven_jaarmaand_verschil,
+        )
+    meting_jaarmaand_netto.metric(
+        label = "winst",
+        value = tekst_netto_jaarmaand,
+        delta = tekst_netto_jaarmaand_verschil,
+        )
+    
     figuur_jaar_taartdiagram_uitgaven.altair_chart(grafiek_jaar_taartdiagram_uitgaven)
-    figuur_maand_staafdiagram.altair_chart(grafiek_maand_staafdiagram)
+    figuur_jaar_staafdiagram.altair_chart(grafiek_jaar_staafdiagram)
     figuur_maand_taartdiagram_inkomsten.altair_chart(grafiek_maand_taartdiagram_inkomsten)
     figuur_maand_taartdiagram_uitgaven.altair_chart(grafiek_maand_taartdiagram_uitgaven)
-    figuur_kaart_europa.altair_chart(grondkaart_benelux + pinbas_benelux)
+    figuur_maand_staafdiagram.altair_chart(grafiek_maand_staafdiagram)
+    figuur_kaart_europa.altair_chart(kaart_grondkaart + kaart_pinbetaling)

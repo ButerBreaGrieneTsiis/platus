@@ -226,7 +226,6 @@ class Transactie:
         return {
             "index":                self.index,
             "bedrag":               self.bedrag / 100,
-            "bedrag_abs":           abs(self.bedrag / 100),
             "beginsaldo":           self.beginsaldo / 100,
             "eindsaldo":            self.eindsaldo / 100,
             "transactiemethode":    self.transactiemethode,
