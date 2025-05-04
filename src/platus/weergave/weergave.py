@@ -15,44 +15,6 @@ from ..gegevens.rekening import Bankrekening, Lening
 
 def weergave():
     
-    st.markdown(
-        """
-        <style>
-            .block-container {
-                padding-top: 0.0rem;
-                padding-bottom: 0rem;
-                padding-left: 2rem;
-                padding-right: 2rem;
-                }
-            
-            header {visibility: hidden;}
-            
-            div[data-testid="stMainBlockContainer"] > div {
-                padding-top: 0.0rem;
-                }
-            
-            div[data-testid="stHeadingWithActionElements"] > h2 {
-                padding: 0.0rem;
-                }
-                
-            div[data-testid="stMetricLabel"] > div {
-                font-size: 0.75rem;
-                }
-            
-            div[data-testid="stMetricValue"] > div {
-                font-size: 1.0rem;
-                }
-            
-            # div[data-testid="stMetricDelta"] > div {
-                font-size: 0.5rem;
-                # color: #2eab7b;
-                }
-            
-        </style>
-        """,
-        unsafe_allow_html = True,
-        )
-    
     @st.cache_data
     def laden_configuratie():
         return open_json("gegevens\\configuratie", "weergave", "json")
@@ -104,6 +66,61 @@ def weergave():
     bankrekening_som, lening_som    =   maken_som(bankrekeningen, leningen)
     tabel_betaalrekening_salaris    =   laden_salaris()
     gegevens_kaart                  =   laden_kaart()
+    
+    st.markdown(
+        f"""
+        <style>
+            .block-container {{
+                padding-top: 0.0rem;
+                padding-bottom: 0rem;
+                padding-left: 2rem;
+                padding-right: 2rem;
+                }}
+            
+            header {{visibility: hidden;}}
+            
+            .main {{overflow: hidden}}
+            
+            div[data-testid = "stMainBlockContainer"] > div {{
+                padding-top: 0.0rem;
+                }}
+            
+            div[data-testid = "stHeadingWithActionElements"] > h2 {{
+                padding: 0.0rem;
+                }}
+                
+            div[data-testid = "stMetricLabel"] > div {{
+                font-size: 0.75rem;
+                }}
+            
+            div[data-testid = "stMetricValue"] > div {{
+                font-size: 1.0rem;
+                }}
+            
+            div[data-testid = "stSliderTickBarMin"] {{
+                font-family: "Source Sans Pro", sans-serif;
+                }}
+            
+            div[data-testid = "stSliderTickBarMax"] {{
+                font-family: "Source Sans Pro", sans-serif;
+                }}
+            
+            div[data-testid = "stSliderThumbValue"] {{
+                font-family: "Source Sans Pro", sans-serif;
+                }}
+            
+            div[data-testid = "stMetricDelta"]:has(svg[data-testid = "stMetricDeltaIcon-Up"]) {{
+                color: {weergave_configuratie["stijl"]["kleur_positief"]};
+                }}
+            
+            div[data-testid = "stMetricDelta"]:has(svg[data-testid = "stMetricDeltaIcon-Down"]) {{
+                color: {weergave_configuratie["stijl"]["kleur_negatief"]};
+                }}
+            
+        </style>
+        """,
+        unsafe_allow_html = True,
+        )
     
     tabel_betaalrekening_transacties    =   bankrekeningen[weergave_configuratie["betaalrekening"]["bankrekening_uuid"]]
     
@@ -1235,6 +1252,7 @@ def weergave():
             type = "quantitative",
             scale = alt.Scale(
                 bins = [1, 10, 100, 1000, 10_000],
+                range = [1, 50],
                 ),
             legend = None,
             ),
@@ -1279,8 +1297,19 @@ def weergave():
         )
     
     kaart_europa = alt.layer(
-        kaart_grondkaart.project(scale = 500, center = [14.416667, 50.0],),
-        kaart_pinbetaling.project(scale = 500, center = [14.416667, 50.0],),
+        kaart_grondkaart.project(
+            scale = 500,
+            center = [14.416667, 45.0],
+            ),
+        kaart_pinbetaling.project(
+            scale = 500,
+            center = [14.416667, 45.0],
+        ).transform_filter(
+            ~alt.FieldEqualPredicate(
+                field = "land",
+                equal = "Nederland",
+                )
+            )
         ).properties(height = 400)
     
     grafiek_saldo = (
@@ -1294,13 +1323,15 @@ def weergave():
         grafiek_jaar_staafdiagram_uitgaven,
     ).properties(
         usermeta = locale,
-        )
+        height = 320,
+    )
     
     grafiek_jaarmaand_staafdiagram = alt.layer(
         grafiek_jaarmaand_staafdiagram_inkomsten,
         grafiek_jaarmaand_staafdiagram_uitgaven,
     ).properties(
         usermeta = locale,
+        height = 320,
         )
     
     grafiek_jaar_salaris = alt.layer(
