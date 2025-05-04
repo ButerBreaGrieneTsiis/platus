@@ -4,7 +4,7 @@
 
 `Platus` bevat op dit moment enkel functionaliteit om banktransacties in te lezen en te verwerken vanaf exports van ABN AMRO internet bankieren. Elke transactie wordt gecategoriseerd en een derde toegezen (degene met wie de transactie plaatsvond). Doordat `Platus` in staat is de toegekende wijzigingen op te slaan, wordt in verloop van tijd het verwerken zo goed als automatisch. In de breedste zin van het woord is het een soort machine learning.
 
-De `Gegevens` module bevat alle functionaliteiten omtrent de gegevensverwerking en opslag. Deze gegevens kunnen worden ingelezen door de modules `Rapporteren`, die data presenteert in tabellen, en `Weergave`, die data presenteert in interactieve grafieken. De onderstaande afbeelding laat de `Weergave` module zien (titels, labels en legenda zijn opzettelijk verborgen). Zelfs een kaart is zichtbaar met de locatie van alle transactie met pinpas.
+De `Gegevens` module bevat alle functionaliteiten omtrent de gegevensverwerking en opslag. Deze gegevens kunnen worden ingelezen door de modules `Rapporteren`, die data presenteert in tabellen, en `Weergave`, die data presenteert in interactieve grafieken. De onderstaande afbeelding laat de `Weergave` module zien. Zelfs een kaart is zichtbaar met de locatie van alle transactie met pinpas.
 
 ![alt text][logo]
 
@@ -35,14 +35,14 @@ weergave()
 En deze dan vervolgens uit te voeren als:
 
 ```
-streamlit het_bovenstaande_bestand.py
+streamlit run het_bovenstaande_bestand.py
 ```
 
 De `Rapporteren` module dient op een gelijke manier als `Weergave` uitgevoerd te worden: verander enkel `from platus.weergave import weergave` naar `from platus.rapport import rapporteren` en `weergave()` naar `rapportern()`.
 
 ## Gegevensverwerking
 
-Alle gegevens wordt opgeslagen in JSON bestanden in `/gegevens/`. `Platus` bevat geen functionaliteit om de benodigde bestanden te genereren. Echter moet de broncode genoeg zijn voor de gevorderde programmeur om van start te gaan. Op verzoek kan ik voorbeeldgegevens genereren om mee te spelen.
+Alle gegevens worden opgeslagen in JSON bestanden in `/gegevens/`. `Platus` bevat geen functionaliteit om de benodigde bestanden te genereren. Echter moet de broncode genoeg zijn voor de gevorderde programmeur om van start te gaan. Op verzoek kan ik voorbeeldgegevens genereren om mee te spelen.
 
 ## De Transactie class
 

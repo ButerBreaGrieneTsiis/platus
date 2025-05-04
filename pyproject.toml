@@ -1,16 +1,11 @@
 [project]
 name = "platus"
-version = "1.1.0"
-authors = [
-    {
-        name = "Tom Scheeper",
-	email = "tomscheeper@gmail.com",
- 	},
-    ]
+version = "1.2.0"
+authors = [{name = "Tom Scheeper",email = "tomscheeper@gmail.com"}]
 
 dependencies = [
     "pandas>=2.2.3",
     "openpyxl>=3.1.5",
-    "grienetsiis@git+https://github.com/ButerBreaGrieneTsiis/grienetsiis#egg=1.2.0",
+    "grienetsiis@git+https://github.com/ButerBreaGrieneTsiis/grienetsiis#egg=1.3.0",
     "streamlit>=1.44.1",
 ]
