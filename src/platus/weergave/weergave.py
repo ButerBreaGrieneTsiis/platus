@@ -1392,14 +1392,14 @@ def weergave():
     waarde_netto_jaar_vorig     =   waarde_inkomsten_jaar_vorig + waarde_uitgaven_jaar_vorig
     waarde_netto_jaar_verschil  =   waarde_netto_jaar - waarde_netto_jaar_vorig
     
-    tekst_inkomsten_jaar            =   toon_bedrag(round(waarde_inkomsten_jaar, 2))
-    tekst_inkomsten_jaar_verschil   =   toon_bedrag(round(waarde_inkomsten_jaar_verschil, 2))
-    tekst_salaris_jaar              =   toon_bedrag(round(waarde_salaris_jaar, 2))
-    tekst_salaris_jaar_verschil     =   toon_bedrag(round(waarde_salaris_jaar_verschil, 2))
-    tekst_uitgaven_jaar             =   toon_bedrag(round(waarde_uitgaven_jaar, 2))
-    tekst_uitgaven_jaar_verschil    =   toon_bedrag(round(waarde_uitgaven_jaar_verschil, 2))
-    tekst_netto_jaar                =   toon_bedrag(round(waarde_netto_jaar, 2))
-    tekst_netto_jaar_verschil       =   toon_bedrag(round(waarde_netto_jaar_verschil, 2))
+    tekst_inkomsten_jaar            =   toon_bedrag(waarde_inkomsten_jaar)
+    tekst_inkomsten_jaar_verschil   =   toon_bedrag(waarde_inkomsten_jaar_verschil)
+    tekst_salaris_jaar              =   toon_bedrag(waarde_salaris_jaar)
+    tekst_salaris_jaar_verschil     =   toon_bedrag(waarde_salaris_jaar_verschil)
+    tekst_uitgaven_jaar             =   toon_bedrag(waarde_uitgaven_jaar)
+    tekst_uitgaven_jaar_verschil    =   toon_bedrag(waarde_uitgaven_jaar_verschil)
+    tekst_netto_jaar                =   toon_bedrag(waarde_netto_jaar)
+    tekst_netto_jaar_verschil       =   toon_bedrag(waarde_netto_jaar_verschil)
     
     waarde_inkomsten_jaarmaand = tabel_betaalrekening_transacties.loc[
         (tabel_betaalrekening_transacties["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
@@ -1474,14 +1474,14 @@ def weergave():
     waarde_netto_jaarmaand_vorig    =   waarde_inkomsten_jaarmaand_vorig + waarde_uitgaven_jaarmaand_vorig
     waarde_netto_jaarmaand_verschil =   waarde_netto_jaarmaand - waarde_netto_jaarmaand_vorig
     
-    tekst_inkomsten_jaarmaand           =   toon_bedrag(round(waarde_inkomsten_jaarmaand, 2))
-    tekst_inkomsten_jaarmaand_verschil  =   toon_bedrag(round(waarde_inkomsten_jaarmaand_verschil, 2))
-    tekst_salaris_jaarmaand             =   toon_bedrag(round(waarde_salaris_jaarmaand, 2))
-    tekst_salaris_jaarmaand_verschil    =   toon_bedrag(round(waarde_salaris_jaarmaand_verschil, 2))
-    tekst_uitgaven_jaarmaand            =   toon_bedrag(round(waarde_uitgaven_jaarmaand, 2))
-    tekst_uitgaven_jaarmaand_verschil   =   toon_bedrag(round(waarde_uitgaven_jaarmaand_verschil, 2))
-    tekst_netto_jaarmaand               =   toon_bedrag(round(waarde_netto_jaarmaand, 2))
-    tekst_netto_jaarmaand_verschil      =   toon_bedrag(round(waarde_netto_jaarmaand_verschil, 2))
+    tekst_inkomsten_jaarmaand           =   toon_bedrag(waarde_inkomsten_jaarmaand)
+    tekst_inkomsten_jaarmaand_verschil  =   toon_bedrag(waarde_inkomsten_jaarmaand_verschil)
+    tekst_salaris_jaarmaand             =   toon_bedrag(waarde_salaris_jaarmaand)
+    tekst_salaris_jaarmaand_verschil    =   toon_bedrag(waarde_salaris_jaarmaand_verschil)
+    tekst_uitgaven_jaarmaand            =   toon_bedrag(waarde_uitgaven_jaarmaand)
+    tekst_uitgaven_jaarmaand_verschil   =   toon_bedrag(waarde_uitgaven_jaarmaand_verschil)
+    tekst_netto_jaarmaand               =   toon_bedrag(waarde_netto_jaarmaand)
+    tekst_netto_jaarmaand_verschil      =   toon_bedrag(waarde_netto_jaarmaand_verschil)
     
     
     # FIGUREN TOEKENNEN
