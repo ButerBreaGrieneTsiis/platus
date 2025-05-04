@@ -338,7 +338,7 @@ class Transactie:
                 
                 transactiemethode       =   "betaalverzoek"
                 
-                bank_uuid               =   cls.config["betaalverzoek"]["bank_uuid"]
+                bank_uuid               =   cls.config["betaalverzoek"]["ontvangen"]["bank_uuid"]
                 details["bank_uuid"]    =   bank_uuid
                 
                 patroon_tikkie          =   re.compile(r"(?i)^Tikkie ID (?:[0-9 ]+), ?(?P<betalingsomschrijving_tikkie>.+), ?Van ?(?P<derde_naam>[\w\s\.]+),? ?(?P<derde_iban>.*)?$")
