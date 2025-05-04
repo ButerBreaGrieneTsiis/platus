@@ -662,7 +662,7 @@ class Transactie:
                 
                 details["salaris"]  =   {}
                 
-                for cat_uuid, trefwoorden in salaris["salaris"].items():
+                for cat_uuid, trefwoorden in salaris["inkomen"].items():
                     for salarisstrook_dict in salarisstrook["earningsData"]:
                         if any([trefwoord in salarisstrook_dict["codeName"].casefold() for trefwoord in trefwoorden]):
                             if cat_uuid not in details["salaris"].keys():
