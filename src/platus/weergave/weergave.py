@@ -19,7 +19,7 @@ def weergave():
         """
         <style>
             .block-container {
-                padding-top: 1.5rem;
+                padding-top: 0.0rem;
                 padding-bottom: 0rem;
                 padding-left: 2rem;
                 padding-right: 2rem;
@@ -27,19 +27,11 @@ def weergave():
             
             header {visibility: hidden;}
             
-            div[data-testid="stMainBlockContainer "] > div {
-                padding-top: 0.0rem;
-                }
-                
-            div[data-testid="stVerticalBlock "] > div {
-                gap: 0.0rem;
-                }
-            
-            div[data-testid="stMainBlockContainer "] > div {
+            div[data-testid="stMainBlockContainer"] > div {
                 padding-top: 0.0rem;
                 }
             
-            h2[] > h2 {
+            div[data-testid="stHeadingWithActionElements"] > h2 {
                 padding: 0.0rem;
                 }
                 
@@ -146,6 +138,7 @@ def weergave():
         invoer_domein_1 = st.empty()
         figuur_inkomsten = st.empty()
         figuur_uitgaven = st.empty()
+        figuur_saldo = st.empty()
     
     with kolom_2:
         st.header(
@@ -200,8 +193,9 @@ def weergave():
             body = "kaart",
             )
         
+        figuur_kaart_benelux = st.empty()
         figuur_kaart_europa = st.empty()
-        figuur_saldo = st.empty()
+        
         
     st.session_state["domein_1_begin"], st.session_state["domein_1_eind"] = invoer_domein_1.select_slider(
         label = "domein_1",
@@ -254,9 +248,9 @@ def weergave():
         month = st.session_state["domein_3_maand"],
         )
     
-    charts_bankrekening_saldo = []
+    grafiek_bankrekening_saldo = []
     for bankrekening_uuid, bankrekening in bankrekeningen.items():
-        charts_bankrekening_saldo.append(
+        grafiek_bankrekening_saldo.append(
             alt.Chart(
                 bankrekening,
             ).mark_line(
@@ -305,7 +299,7 @@ def weergave():
                 )
             )
     
-    charts_bankrekening_saldo.append(
+    grafiek_bankrekening_saldo.append(
         alt.Chart(
             bankrekening_som
         ).mark_line(
@@ -351,9 +345,9 @@ def weergave():
             ),
         )
     
-    charts_lening_saldo = []
+    grafiek_lening_saldo = []
     for lening_uuid, lening in leningen.items():
-        charts_lening_saldo.append(
+        grafiek_lening_saldo.append(
             alt.Chart(
                 lening,
             ).mark_line(
@@ -399,7 +393,7 @@ def weergave():
                 ),
             )
     
-    charts_lening_saldo.append(
+    grafiek_lening_saldo.append(
         alt.Chart(
             lening_som,
         ).mark_line(
@@ -506,6 +500,8 @@ def weergave():
                 st.session_state["domein_1_eind"],
                 ),
             )
+    ).properties(
+        height = 300,
         )
     
     grafiek_oppervlakte_uitgaven = alt.Chart(
@@ -571,6 +567,8 @@ def weergave():
                 st.session_state["domein_1_eind"],
                 ),
             )
+    ).properties(
+        height = 300,
         )
     
     grafiek_jaar_staafdiagram_inkomsten = alt.Chart(
@@ -732,7 +730,6 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
-        height = 275,
         )
     
     grafiek_jaar_taartdiagram_uitgaven = alt.Chart(
@@ -780,7 +777,6 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
-        height = 275,
         )
     
     grafiek_jaar_salaris_inkomsten = alt.Chart(
@@ -1052,7 +1048,6 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
-        height = 275,
         )
     
     grafiek_jaarmaand_taartdiagram_uitgaven = alt.Chart(
@@ -1100,7 +1095,6 @@ def weergave():
             )
     ).properties(
         usermeta = locale,
-        height = 275,
         )
     
     grafiek_jaarmaand_salaris_inkomsten = alt.Chart(
@@ -1220,8 +1214,6 @@ def weergave():
     ).encode(
     ).project(
         type = "mercator",
-        scale = 6000,
-        center = [5.387201, 52.155172],    
     ).properties(
         width = 300,
         height = 500,
@@ -1269,14 +1261,32 @@ def weergave():
                 st.session_state["domein_1_begin"],
                 st.session_state["domein_1_eind"],
                 ),
-            ),
+            )
+        & alt.FieldOneOfPredicate(
+            field = "transactiemethode",
+            oneOf = ["pinbetaling", "geldopname"],
+            )
     ).project(
         type = "mercator",
-        scale = 6000,
-        center = [5.387201, 52.155172],    
     ).properties(
         width = 300,
         height = 500,
+        )
+    
+    kaart_benelux = alt.layer(
+        kaart_grondkaart.project(scale = 6000, center = [5.387201, 52.155172],),
+        kaart_pinbetaling.project(scale = 6000, center = [5.387201, 52.155172],),
+        )
+    
+    kaart_europa = alt.layer(
+        kaart_grondkaart.project(scale = 500, center = [14.416667, 50.0],),
+        kaart_pinbetaling.project(scale = 500, center = [14.416667, 50.0],),
+        ).properties(height = 400)
+    
+    grafiek_saldo = (
+        alt.layer(*grafiek_bankrekening_saldo) + alt.layer(*grafiek_lening_saldo)
+    ).properties(
+        height = 240,
         )
     
     grafiek_jaar_staafdiagram = alt.layer(
@@ -1359,7 +1369,6 @@ def weergave():
     tekst_uitgaven_jaar_verschil    =   toon_bedrag(round(waarde_uitgaven_jaar_verschil, 2))
     tekst_netto_jaar                =   toon_bedrag(round(waarde_netto_jaar, 2))
     tekst_netto_jaar_verschil       =   toon_bedrag(round(waarde_netto_jaar_verschil, 2))
-    
     
     waarde_inkomsten_jaarmaand = tabel_betaalrekening_transacties.loc[
         (tabel_betaalrekening_transacties["datumtijd"].dt.year == st.session_state["domein_3_jaar"])
@@ -1488,7 +1497,7 @@ def weergave():
         delta = tekst_netto_jaarmaand_verschil,
         )
     
-    figuur_saldo.altair_chart(alt.layer(*charts_bankrekening_saldo) + alt.layer(*charts_lening_saldo))
+    figuur_saldo.altair_chart(grafiek_saldo)
     figuur_inkomsten.altair_chart(grafiek_oppervlakte_inkomsten)
     figuur_uitgaven.altair_chart(grafiek_oppervlakte_uitgaven)
     figuur_jaar_taartdiagram_inkomsten.altair_chart(grafiek_jaar_taartdiagram_inkomsten)
@@ -1499,4 +1508,5 @@ def weergave():
     figuur_jaarmaand_taartdiagram_uitgaven.altair_chart(grafiek_jaarmaand_taartdiagram_uitgaven)
     figuur_jaarmaand_salaris.altair_chart(grafiek_jaarmaand_salaris)
     figuur_jaarmaand_staafdiagram.altair_chart(grafiek_jaarmaand_staafdiagram)
-    figuur_kaart_europa.altair_chart(kaart_grondkaart + kaart_pinbetaling)
+    figuur_kaart_benelux.altair_chart(kaart_benelux)
+    figuur_kaart_europa.altair_chart(kaart_europa)
