@@ -99,7 +99,7 @@ def weergave():
     @st.cache_data
     def laden_kaart():
         return alt.Data(
-            url = "https://raw.githubusercontent.com/ButerBreaGrieneTsiis/platus/refs/heads/development/weergave/assets/europa.geo.json",
+            url = "https://raw.githubusercontent.com/ButerBreaGrieneTsiis/platus/refs/heads/main/assets/europa.geo.json",
             format = alt.DataFormat(
                 property = "features",
                 type = "json",
