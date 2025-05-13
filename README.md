@@ -1,6 +1,6 @@
 # Platus
 
-`Platus` is mijn persoonlijke Python module om mijn financiën bij te houden: bankrekeningen, leningen en beleggingen. Het is geschreven in Python als een objectgeoriënteerd programma, waarbij elke geldbeweging worden gekenmerkt door een `Transactie` class: in principe draait heel `Platus` om deze class. De velden van deze class staan in de tabel onderaan. 
+`Platus` is mijn persoonlijke Python module om mijn financiën bij te houden: bankrekeningen, leningen en beleggingen. Het is geschreven in Python als een objectgeoriënteerd programma, waarbij elke geldbeweging wordt gekenmerkt door een `Transactie` class: in principe draait heel `Platus` om deze class. De velden van deze class staan in de tabel onderaan. 
 
 `Platus` bevat op dit moment enkel functionaliteit om banktransacties in te lezen en te verwerken vanaf exports van ABN AMRO internet bankieren. Elke transactie wordt gecategoriseerd en een derde toegezen (degene met wie de transactie plaatsvond). Doordat `Platus` in staat is de toegekende wijzigingen op te slaan, wordt in verloop van tijd het verwerken zo goed als automatisch. In de breedste zin van het woord is het een soort machine learning.
 
