@@ -49,8 +49,8 @@ Alle gegevens worden opgeslagen in JSON bestanden in `/gegevens/`. `Platus` beva
 | **veld**          | **type**      | **beschrijving**                                                                                                                                                                          |
 |-------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | bedrag            | `int`         | bedrag in centen, negatief bij uitgave, positief bij inkomst                                                                                                                              |
-| beginsaldo        | `int`         | saldo van de rekening in centen voor de transactie                                                                                                                                        |
-| eindsaldo         | `int`         | saldo van de rekening in centen na de transactie                                                                                                                                          |
+| beginsaldo*       | `int`         | saldo van de rekening in centen voor de transactie                                                                                                                                        |
+| eindsaldo*        | `int`         | saldo van de rekening in centen na de transactie                                                                                                                                          |
 | transactiemethode | `str`         | wijze waarop de transactie plaatsvond, bijv. een geldopname, een pinbetaling, een overboeking, ...                                                                                        |
 | datumtijd         | `dt.datetime` | datum (en tijd) waarop de transactie plaatsvond of verwerkt is                                                                                                                            |
 | cat_uuid          | `str`         | sleutel naar de bijbehorende categorie/hoofdcategorie in `/gegevens/configuratie/categorie.json` en `/gegevens/configuratie/hoofdcategorie.json`                                          |
@@ -59,5 +59,7 @@ Alle gegevens worden opgeslagen in JSON bestanden in `/gegevens/`. `Platus` beva
 | dagindex          | `int`         | hoeveelste transactie van deze rekening op deze dag                                                                                                                                       |
 | details           | `dict`        | aanvullende velden die verschillen per transactiemethode, zoals bijv. een locatie bij een pinbetaling, een medium bij een betaalverzoek, betalingsomschrijving bij een idealbetaling, ... |
 | tijdelijk         | `dict`        | aanvullende velden die niet opgeslagen worden maar intern gebruikt worden tijdens het verwerken, bijv. om synoniemen toe te kennen aan bepaalde locaties of derden                        |
+
+*In het kader databesparing, is één van deze waardes overbodig. Echter is ervoor gekozen beide te implementeren aangezien deze waardes direct gegeven worden door de export van ABN AMRO Internet Bankieren. Het is een extra check om ervoor te zorgen dat het saldo correct is.
 
 [logo]: https://github.com/ButerBreaGrieneTsiis/platus/blob/main/assets/weergave.png "Streamlit Weergave"
